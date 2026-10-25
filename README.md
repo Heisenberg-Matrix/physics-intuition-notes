@@ -9,7 +9,7 @@
 - [高中物理 · 基础知识讲义](high-school/fundamentals/README.md)：概念、公式、物理图像、适用条件与误区。
 - [高中物理 · 高考重点模型](high-school/gaokao-models/README.md)：建模、过程分析、临界条件和模型迁移。
 - [大学物理](university/README.md)：连接物理直观、数学推导与理论结构。
-- [动画与交互实验](animations/README.md)：把抽象过程变得可观察、可操作。
+- [动画与交互实验](animations/README.md)：把抽象过程变得可观察、可操作（含 Water Lab 水流交互 Demo）。
 - [教案与教学设计](teaching/README.md)：研究学生的理解障碍和教学反馈。
 
 ## 创作原则

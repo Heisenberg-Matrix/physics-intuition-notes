@@ -1,0 +1,10 @@
+{
+  "name": "water-lab",
+  "version": "1.0.0",
+  "description": "Water Lab — 2D 粒子水流交互实验（浏览器 Canvas Demo）",
+  "type": "module",
+  "scripts": {
+    "serve": "npx --yes serve .",
+    "test": "node tests/physics.test.mjs"
+  }
+}

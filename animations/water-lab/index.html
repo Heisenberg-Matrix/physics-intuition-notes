@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Lab — 2D 粒子水流实验</title>
+  <style>
+    :root {
+      --panel-bg: #f5f8fc;
+      --border: #d7e2ee;
+      --accent: #2f80ed;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      font-family: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #eef3f9;
+      color: #223;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: 1fr;
+      height: 100vh;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      color: #334155;
+    }
+
+    .label em,
+    .hint em {
+      font-style: normal;
+      font-weight: 400;
+      color: #93a5bd;
+      margin-left: 4px;
+    }
+
+    .panel .hint {
+      font-size: 12px;
+      color: #7e8ba0;
+      margin: 0 0 14px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: #223;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button:hover {
+      background: #eef4ff;
+      border-color: var(--accent);
+    }
+
+    .ctrl {
+      margin-bottom: 12px;
+    }
+
+    .ctrl .label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .ctrl .label .val {
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .scene-wrap {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #eef6ff;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="panel">
+      <h2>水流参数</h2>
+      <div id="status" style="font-size:12px;color:#075985;background:#e5f2ff;border:1px solid #cfe5ff;border-radius:6px;padding:6px 8px;margin-bottom:10px;font-variant-numeric:tabular-nums;">…</div>
+      <p class="hint">拖动画布上的圆圈可移动发射点</p>
+      <div class="btn-row">
+        <button id="btn-flow">停止水流</button>
+        <button id="btn-pause">暂停</button>
+        <button id="btn-reset">重置</button>
+      </div>
+      <div class="btn-row">
+        <button id="btn-horizontal">一键平抛 0°</button>
+        <button id="btn-oblique">斜抛 60°</button>
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>angle <em>发射角度 (°，向上为正)</em></span><span class="val" id="v-angle"></span></div>
+        <input type="range" id="p-angle" min="-180" max="180" step="1">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>speed <em>力度 / 初速大小</em></span><span class="val" id="v-speed"></span></div>
+        <input type="range" id="p-speed" min="0" max="1000" step="5">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>startX <em>发射点 X</em></span><span class="val" id="v-startX"></span></div>
+        <input type="range" id="p-startX" min="0" max="1200" step="1">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>startY <em>发射点 Y</em></span><span class="val" id="v-startY"></span></div>
+        <input type="range" id="p-startY" min="0" max="800" step="1">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>velocityX <em>水平初速</em></span><span class="val" id="v-velocityX"></span></div>
+        <input type="range" id="p-velocityX" min="-1000" max="1000" step="5">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>velocityY <em>竖直初速</em></span><span class="val" id="v-velocityY"></span></div>
+        <input type="range" id="p-velocityY" min="-1000" max="1000" step="5">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>gravity <em>重力</em></span><span class="val" id="v-gravity"></span></div>
+        <input type="range" id="p-gravity" min="0" max="1600" step="10">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>emissionRate <em>发射率</em></span><span class="val" id="v-emissionRate"></span></div>
+        <input type="range" id="p-emissionRate" min="0" max="800" step="5">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>particleRadius <em>水粒子大小</em></span><span class="val" id="v-particleRadius"></span></div>
+        <input type="range" id="p-particleRadius" min="2" max="14" step="0.5">
+      </div>
+      <div class="ctrl">
+        <div class="label"><span>groundY <em>地面高度</em></span><span class="val" id="v-groundY"></span></div>
+        <input type="range" id="p-groundY" min="100" max="1200" step="2">
+      </div>
+    </section>
+
+    <main class="scene-wrap">
+      <canvas id="scene"></canvas>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
