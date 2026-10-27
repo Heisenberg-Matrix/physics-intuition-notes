@@ -134,7 +134,7 @@ export class UnitCircle {
     this.activeProj.setAttribute('y1', String(a.y));
     this.activeProj.setAttribute('x2', String(a.x));
     this.activeProj.setAttribute('y2', '0');
-    this.rightMark.setAttribute('points', this.rightMarkPoints(a.x));
+    this.rightMark.setAttribute('points', this.rightMarkPoints(a.x, a.y));
     this.activePoint.setAttribute('cx', String(a.x));
     this.activePoint.setAttribute('cy', String(a.y));
     this.hitPoint.setAttribute('cx', String(a.x));
@@ -154,12 +154,16 @@ export class UnitCircle {
     this.refG.style.display = view.showReference ? '' : 'none';
   }
 
-  /** 直角标记: 在投影落点 (px, 0) 处画一个小方角。 */
-  private rightMarkPoints(px: number): string {
+  /**
+   * 直角标记: 在投影落点 (px, 0) 处画一个小方角。
+   * 竖边朝向「投影实际所在的一侧」(由 py 判向, 保证 sin<0 时标记朝下而非悬在上方),
+   * 横边朝向圆心, 落在轴与投影之间的内角。
+   */
+  private rightMarkPoints(px: number, py: number): string {
     const s = 12; // 边长
-    const dir = px >= 0 ? -1 : 1; // 朝向圆心(向原点)开口
-    const x0 = px + dir * s;
-    return `${px} 0 ${x0} 0 ${x0} ${s}`;
+    const v = py > 0 ? s : -s; // 竖边: 指向投影一侧 (py<0 → 上方)
+    const h = px > 0 ? -s : s; // 横边: 指向圆心一侧
+    return `${px} 0 ${px} ${v} ${px + h} ${v}`;
   }
 
   private attachDrag(): void {
