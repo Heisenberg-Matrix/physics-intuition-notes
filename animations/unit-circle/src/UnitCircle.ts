@@ -50,7 +50,7 @@ export class UnitCircle {
   // 可见对象
   private readonly activeRay: SVGLineElement;
   private readonly activeProj: SVGLineElement;
-  private readonly rightMark: SVGPolylineElement;
+  // private readonly rightMark: SVGPolylineElement; // — 直角标记(本轮暂时注释)
   private readonly activePoint: SVGCircleElement;
 
   // 命中区(不可见, 放大以降低精确点按压力)
@@ -84,7 +84,7 @@ export class UnitCircle {
     this.hitProj = create('line', { class: 'hit-line hit-proj' });
     this.activeRay = create('line', { class: 'active-ray' });
     this.activeProj = create('line', { class: 'sin-proj' });
-    this.rightMark = create('polyline', { class: 'right-mark' });
+    // this.rightMark = create('polyline', { class: 'right-mark' }); // — 直角标记(暂时注释)
 
     this.activePoint = create('circle', {
       class: 'active-point',
@@ -102,7 +102,7 @@ export class UnitCircle {
       this.hitProj,
       this.activeRay,
       this.activeProj,
-      this.rightMark,
+      // this.rightMark, // — 直角标记(暂时注释)
       this.activePoint,
       this.hitPoint,
     );
@@ -126,7 +126,7 @@ export class UnitCircle {
     this.activeProj.setAttribute('y1', String(a.y));
     this.activeProj.setAttribute('x2', String(a.x));
     this.activeProj.setAttribute('y2', '0');
-    this.rightMark.setAttribute('points', this.rightMarkPoints(a.x, a.y));
+    // this.rightMark.setAttribute('points', this.rightMarkPoints(a.x, a.y)); // — 直角标记(暂时注释)
 
     this.hitRay.setAttribute('x2', String(a.x));
     this.hitRay.setAttribute('y2', String(a.y));
@@ -280,12 +280,13 @@ export class UnitCircle {
     axisG.append(xLabel, yLabel);
   }
 
-  private rightMarkPoints(px: number, py: number): string {
-    const s = 12;
-    const v = py > 0 ? s : -s;
-    const h = px > 0 ? -s : s;
-    return `${px} 0 ${px} ${v} ${px + h} ${v}`;
-  }
+  // — 直角标记(暂时注释) ——
+  // private rightMarkPoints(px: number, py: number): string {
+  //   const s = 12;
+  //   const v = py > 0 ? s : -s;
+  //   const h = px > 0 ? -s : s;
+  //   return `${px} 0 ${px} ${v} ${px + h} ${v}`;
+  // }
 }
 
 function toViewBox(e: PointerEvent, svg: SVGSVGElement): Vec2 | null {
