@@ -1,10 +1,12 @@
 /**
- * UnitCircle.ts — SVG 绘制与更新 + 交互(悬停 / 拖动 / 键盘)。
+ * UnitCircle.ts — SVG 绘制与更新 + 交互。
  *
- * 三层职责,分别落位:
+ * 三层职责, 分别落位:
  *  - 数学: 由 main.ts 调 math.ts 算出 P / OP / sin 线段坐标, 此处只「摆放」;
  *  - 绘制: 圆、坐标轴、活动点、半径、sin 投影三件套的静态结构;
- *  - 交互: 三个对象独立响应悬停, 圆周点可拖动(命中区放大), 键盘调角。
+ *  - 交互: 同一时刻只高亮一个对象, 命中优先级「点 > 半径 > 圆内(sin)」,
+ *          圆周点可拖动; 不改鼠标光标。
+ *
  * 悬停只改视觉状态, 不改变数学; 拖动期间点保持高亮, 结束后恢复。
  */
 
@@ -12,10 +14,10 @@ import { normalizeAngle, toDegrees, type RenderModel, type Vec2 } from './math';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/** 单位圆半径(像素)。与 math.ts 画同一圆,两者共用常量。 */
+/** 单位圆半径(像素)。与 math.ts 画同一圆, 两者共用常量。 */
 export const RADIUS = 270;
 
-/** 渲染开关:坐标系显隐、原角参照显隐。 */
+/** 渲染开关: 坐标系显隐、原角参照显隐。 */
 export interface ViewOptions {
   showAxes: boolean;
   showReference: boolean;
@@ -29,6 +31,13 @@ export interface UnitCircleHandlers {
   onAngularStep(deltaDeg: number): void;
 }
 
+/** 三个可高亮对象。 */
+type HitTarget = 'point' | 'radius' | 'sin';
+
+const HOT = 'hot'; // 当前高亮的对象
+const POINT_PROX = 34; // 距圆周点多近算「指到点」(命中判定宽于可见圆点)
+const RAY_PROX = 18; // 距半径线段多近算「指到半径」
+
 function create<K extends keyof SVGElementTagNameMap>(
   tag: K,
   attrs: Record<string, string | number>,
@@ -38,8 +47,6 @@ function create<K extends keyof SVGElementTagNameMap>(
   return el;
 }
 
-const HOT = 'hot'; // 悬停或拖动中
-
 export class UnitCircle {
   private readonly svg: SVGSVGElement;
 
@@ -47,28 +54,25 @@ export class UnitCircle {
   private readonly refG: SVGGElement;
   private readonly activeG: SVGGElement;
 
-  // 可见对象
   private readonly activeRay: SVGLineElement;
   private readonly activeProj: SVGLineElement;
-  // private readonly rightMark: SVGPolylineElement; // — 直角标记(本轮暂时注释)
   private readonly activePoint: SVGCircleElement;
-
-  // 命中区(不可见, 放大以降低精确点按压力)
-  private readonly hitPoint: SVGCircleElement;
-  private readonly hitRay: SVGLineElement;
-  private readonly hitProj: SVGLineElement;
 
   private readonly refRay: SVGLineElement;
   private readonly refProj: SVGLineElement;
   private readonly refPoint: SVGCircleElement;
 
-  /** 是否正在拖动圆周点。拖动期间点保持高亮、线段悬停忽略。 */
+  /** 当前活动点 P 的坐标(SVG 原点为圆心)。悬停距离判定会用。 */
+  private curP: Vec2 = { x: RADIUS, y: 0 };
+  /** 当前高亮的对象; 全局只有一个。 */
+  private active: HitTarget | null = null;
+  /** 是否正在拖动圆周点。 */
   private dragging = false;
 
   constructor(svg: SVGSVGElement, private readonly handlers: UnitCircleHandlers) {
     this.svg = svg;
 
-    // ——— 图层: 坐标轴(可整体显隐) → 原角参照 → 活动层 ———
+    // ——— 图层: 坐标轴 → 原角参照 → 活动层 ———
     this.axisG = create('g', { class: 'axis', 'aria-hidden': 'true' });
     this.buildAxes(this.axisG);
 
@@ -78,39 +82,24 @@ export class UnitCircle {
     this.refPoint = create('circle', { class: 'ref-point' });
     this.refG.append(this.refRay, this.refProj, this.refPoint);
 
-    // 活动层: ① 透明宽命中线(悬停) → ② 可见半径/投影 → ③ 圆点(最上层)
     this.activeG = create('g', { class: 'active' });
-    this.hitRay = create('line', { class: 'hit-line hit-ray' });
-    this.hitProj = create('line', { class: 'hit-line hit-proj' });
     this.activeRay = create('line', { class: 'active-ray' });
     this.activeProj = create('line', { class: 'sin-proj' });
-    // this.rightMark = create('polyline', { class: 'right-mark' }); // — 直角标记(暂时注释)
-
     this.activePoint = create('circle', {
       class: 'active-point',
-      r: '6', // 兜底半径; 悬停由 CSS 的 r 属性放大
+      r: '6',
       tabindex: '0',
       role: 'slider',
       'aria-label': '圆周点 P, 可用方向键或鼠标拖动调整角度',
       'aria-valuemin': 0,
       'aria-valuemax': 360,
     });
-    this.hitPoint = create('circle', { class: 'hit-point', r: '26' });
-
-    this.activeG.append(
-      this.hitRay,
-      this.hitProj,
-      this.activeRay,
-      this.activeProj,
-      // this.rightMark, // — 直角标记(暂时注释)
-      this.activePoint,
-      this.hitPoint,
-    );
+    this.activeG.append(this.activeRay, this.activeProj, this.activePoint);
 
     const circle = create('circle', { class: 'circle', r: RADIUS });
     svg.append(circle, this.axisG, this.refG, this.activeG);
 
-    this.setUpHover();
+    this.attachHover();
     this.attachDrag();
     this.attachKeyboard();
   }
@@ -120,27 +109,19 @@ export class UnitCircle {
   /** 更新三件套与参照的几何位置; 不触发热状态。 */
   render(model: RenderModel, view: ViewOptions): void {
     const a = model.active;
+    this.curP = a;
     this.activeRay.setAttribute('x2', String(a.x));
     this.activeRay.setAttribute('y2', String(a.y));
     this.activeProj.setAttribute('x1', String(a.x));
     this.activeProj.setAttribute('y1', String(a.y));
     this.activeProj.setAttribute('x2', String(a.x));
     this.activeProj.setAttribute('y2', '0');
-    // this.rightMark.setAttribute('points', this.rightMarkPoints(a.x, a.y)); // — 直角标记(暂时注释)
-
-    this.hitRay.setAttribute('x2', String(a.x));
-    this.hitRay.setAttribute('y2', String(a.y));
-    this.hitProj.setAttribute('x1', String(a.x));
-    this.hitProj.setAttribute('y1', String(a.y));
-    this.hitProj.setAttribute('x2', String(a.x));
-    this.hitProj.setAttribute('y2', '0');
 
     this.setCircle(this.activePoint, a);
-    this.setCircle(this.hitPoint, a);
-
     const ang = normalizeAngle(Math.atan2(-a.y, a.x));
     this.activePoint.setAttribute('aria-valuenow', String(Math.round(toDegrees(ang))));
 
+    // 参照层
     const r = model.ref;
     this.refRay.setAttribute('x2', String(r.x));
     this.refRay.setAttribute('y2', String(r.y));
@@ -161,66 +142,76 @@ export class UnitCircle {
 
   /* ————————————————— 交互 ————————————————— */
 
-  /**
-   * 悬停绑定: 三个对象各自独立响应 pointerenter / pointerleave, 只切视觉状态 .hot。
-   * 拖动期间线段不响应(避免烦人闪烁); 圆周点通过命中区高亮, 拖动期间保持。
-   */
-  private setUpHover(): void {
-    // 半径与 sin 投影: 命中区(透明宽线)收 hover, 转发 .hot 到可见线段。
-    this.wireHover(this.hitRay, this.activeRay);
-    this.wireHover(this.hitProj, this.activeProj);
-
-    // 圆周点: 命中区大圆负责悬停与拖动的视觉高亮。
-    this.hitPoint.addEventListener('pointerenter', () => this.activePoint.classList.add(HOT));
-    this.hitPoint.addEventListener('pointerleave', () => {
-      if (!this.dragging) this.activePoint.classList.remove(HOT);
-    });
+  /** 高亮置为且只能是一个 target; 传入不同时清掉旧的再亮新的。 */
+  private setHot(target: HitTarget | null): void {
+    if (this.active === target) return;
+    this.active = target;
+    this.toggleHot(this.activePoint, target === 'point');
+    this.toggleHot(this.activeRay, target === 'radius');
+    this.toggleHot(this.activeProj, target === 'sin');
   }
 
-  /** 命中区收 hover, 把 .hot 转发到对应可见元素; 拖动期间忽略。 */
-  private wireHover(hit: SVGElement, target: SVGElement): void {
-    hit.addEventListener('pointerenter', () => {
-      if (!this.dragging) target.classList.add(HOT);
+  private toggleHot(el: SVGElement, on: boolean): void {
+    el.classList.toggle(HOT, on);
+  }
+
+  /**
+   * 判定指针落在哪个对象上。
+   * 优先级: 点 > 半径 > 圆内(sin)。圆外且不在点/半径上 → none。
+   */
+  private hitAt(p: Vec2): HitTarget | null {
+    const dCenter = Math.hypot(p.x, p.y);
+    const dPoint = Math.hypot(p.x - this.curP.x, p.y - this.curP.y);
+    if (dPoint <= POINT_PROX) return 'point';
+    const rayDist = distToSegment(p, { x: 0, y: 0 }, this.curP);
+    if (rayDist <= RAY_PROX) return 'radius';
+    return dCenter <= RADIUS ? 'sin' : null;
+  }
+
+  private attachHover(): void {
+    this.svg.addEventListener('pointermove', (e) => {
+      if (this.dragging) return;
+      const p = toViewBox(e, this.svg);
+      if (!p) return;
+      this.setHot(this.hitAt(p));
     });
-    hit.addEventListener('pointerleave', () => {
-      if (!this.dragging) target.classList.remove(HOT);
-    });
+    this.svg.addEventListener('pointerleave', () => this.setHot(null));
   }
 
   private attachDrag(): void {
-    let activePointerId = -1;
-
-    const start = (e: PointerEvent) => {
+    this.svg.addEventListener('pointerdown', (e) => {
+      const p = toViewBox(e, this.svg);
+      if (!p) return;
+      if (this.hitAt(p) === null) return; // 任一对象高亮(圆内/半径/点)即可拖动圆点
       e.preventDefault();
       this.dragging = true;
       this.svg.classList.add('dragging');
-      this.activePoint.classList.add(HOT);
+      this.setHot('point');
       this.svg.setPointerCapture(e.pointerId);
-      activePointerId = e.pointerId;
-      this.moveTo(e);
-    };
-    const move = (e: PointerEvent) => {
-      if (!this.dragging || e.pointerId !== activePointerId) return;
-      this.moveTo(e);
-    };
+      this.drag(e);
+    });
+    this.svg.addEventListener('pointermove', (e) => {
+      if (this.dragging) this.drag(e);
+    });
     const end = () => {
       if (!this.dragging) return;
       this.dragging = false;
       this.svg.classList.remove('dragging');
-      this.activePoint.classList.remove(HOT);
+      // 抬起后按指针所在位置重新判定高亮
+      if (this.lastP) this.setHot(this.hitAt(this.lastP));
+      else this.setHot(null);
     };
-
-    this.hitPoint.addEventListener('pointerdown', start);
-    this.svg.addEventListener('pointermove', move);
     this.svg.addEventListener('pointerup', end);
     this.svg.addEventListener('pointercancel', end);
     this.svg.addEventListener('lostpointercapture', end);
   }
 
-  /** 把当前指针位置投影为圆周角(连续, 不吸附整度)。 */
-  private moveTo(e: PointerEvent): void {
+  private lastP: Vec2 | null = null;
+
+  private drag(e: PointerEvent): void {
     const p = toViewBox(e, this.svg);
     if (!p) return;
+    this.lastP = p;
     this.handlers.onAngleDragged(Math.atan2(-p.y, p.x));
   }
 
@@ -279,16 +270,22 @@ export class UnitCircle {
     yLabel.textContent = 'y';
     axisG.append(xLabel, yLabel);
   }
-
-  // — 直角标记(暂时注释) ——
-  // private rightMarkPoints(px: number, py: number): string {
-  //   const s = 12;
-  //   const v = py > 0 ? s : -s;
-  //   const h = px > 0 ? -s : s;
-  //   return `${px} 0 ${px} ${v} ${px + h} ${v}`;
-  // }
 }
 
+/** 点 p 到线段 a→b 的最短距离。 */
+function distToSegment(p: Vec2, a: Vec2, b: Vec2): number {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const lenSq = abx * abx + aby * aby;
+  if (lenSq === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * abx + (p.y - a.y) * aby) / lenSq;
+  t = Math.min(1, Math.max(0, t));
+  const cx = a.x + t * abx;
+  const cy = a.y + t * aby;
+  return Math.hypot(p.x - cx, p.y - cy);
+}
+
+/** 指针事件 → viewBox 坐标(SVG 原点即圆心)。 */
 function toViewBox(e: PointerEvent, svg: SVGSVGElement): Vec2 | null {
   const pt = svg.createSVGPoint();
   pt.x = e.clientX;

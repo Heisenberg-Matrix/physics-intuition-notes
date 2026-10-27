@@ -166,26 +166,11 @@ body {
   stroke-width: 1.6;
 }
 
-/* 透明宽命中区: 放大可点区域, 不可见 */
-.hit-line {
-  fill: none;
-  stroke: transparent;
-  stroke-linecap: round;
-  pointer-events: visiblePainted;
-}
-.hit-ray {
-  stroke-width: 16;
-}
-.hit-proj {
-  stroke-width: 20;
-}
-
 /* 圆周点 P: 悬停时以圆心为原点平滑放大 */
 .active-point {
   fill: var(--accent);
   stroke: #fff;
   stroke-width: 1.5;
-  cursor: grab;
   transform-box: fill-box;
   transform-origin: center;
   transition: transform 0.15s ease, filter 0.15s ease;
@@ -193,21 +178,6 @@ body {
 .active-point.hot {
   transform: scale(1.45);
   filter: drop-shadow(0 0 2px rgba(180, 101, 74, 0.4));
-}
-
-/* 命中大圆: 不可见但负责抓取与发热 */
-.hit-point {
-  r: 26px;
-  fill: transparent;
-  stroke: none;
-  cursor: grab;
-}
-
-#circle.dragging {
-  cursor: grabbing;
-}
-#circle.dragging .active-point {
-  cursor: grabbing;
 }
 .active-point:focus {
   outline: 2px dotted rgba(180, 101, 74, 0.7);
