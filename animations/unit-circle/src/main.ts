@@ -71,6 +71,13 @@ function updateReadout(): void {
     `→ θ′ = ${thetaPrimeDeg}°,  sin θ′ = ${sinVal.toFixed(3)}`;
 }
 
+/** 键盘逐步调角。 */
+function stepTheta(deltaDeg: number): void {
+  state.thetaDeg = normalizeDeg(state.thetaDeg + deltaDeg);
+  controls.setThetaValue(state.thetaDeg);
+  render();
+}
+
 /** 由圆弧拖动命中的 θ′ 反解 θ, 更新状态与画布。 */
 function applyDrag(thetaPrimeRad: number): void {
   state.thetaDeg = normalizeDeg(toDegrees(thetaFromTransformed(thetaPrimeRad, state.sign, state.k)));
@@ -84,6 +91,7 @@ function applyDrag(thetaPrimeRad: number): void {
  */
 const unitCircle = new UnitCircle(svg, {
   onAngleDragged: applyDrag,
+  onAngularStep: stepTheta,
 });
 
 const controls = setupControls(controlsRoot, {
