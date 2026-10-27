@@ -21,6 +21,8 @@ export const RADIUS = 270;
 export interface ViewOptions {
   showAxes: boolean;
   showReference: boolean;
+  /** 显示 y 轴上的 sin 影子投影(与 sin 平行的竖线段)。 */
+  showShadow: boolean;
 }
 
 /** 交互回调: 拖到某个角(θ′)与键盘逐步调角。 */
@@ -134,10 +136,10 @@ export class UnitCircle {
     this.activeProj.setAttribute('y1', String(a.y));
     this.activeProj.setAttribute('x2', String(a.x));
     this.activeProj.setAttribute('y2', '0');
-    // 影子投影: 从 P 水平投到 y 轴(x=0)
+    // 影子投影: 沿 y 轴方向、与 sin 线段平行的一段(从 x 轴到 P 的高度)
     this.sinShadow.setAttribute('x1', '0');
-    this.sinShadow.setAttribute('y1', String(a.y));
-    this.sinShadow.setAttribute('x2', String(a.x));
+    this.sinShadow.setAttribute('y1', '0');
+    this.sinShadow.setAttribute('x2', '0');
     this.sinShadow.setAttribute('y2', String(a.y));
 
     this.updateSign(a);
@@ -158,6 +160,7 @@ export class UnitCircle {
 
     this.axisG.style.display = view.showAxes ? '' : 'none';
     this.refG.style.display = view.showReference ? '' : 'none';
+    this.sinShadow.style.display = view.showShadow ? '' : 'none';
   }
 
   private setCircle(el: SVGElement, p: Vec2): void {
@@ -194,7 +197,6 @@ export class UnitCircle {
     this.toggleHot(this.activeRay, target === 'radius');
     const sinOn = target === 'sin';
     this.toggleHot(this.activeProj, sinOn);
-    this.toggleHot(this.sinShadow, sinOn);
     this.toggleHot(this.sinSign, sinOn);
   }
 

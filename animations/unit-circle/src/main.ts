@@ -23,6 +23,7 @@ interface State {
   k: number;
   showAxes: boolean;
   showReference: boolean;
+  showShadow: boolean;
 }
 
 const svg = document.getElementById('circle') as unknown as SVGSVGElement;
@@ -36,6 +37,7 @@ const state: State = {
   k: 0,
   showAxes: true,
   showReference: true,
+  showShadow: true,
 };
 
 /** 把任意度数规范化到 [0, 360)。 */
@@ -49,6 +51,7 @@ function render(): void {
   unitCircle.render(model, {
     showAxes: state.showAxes,
     showReference: state.showReference,
+    showShadow: state.showShadow,
   });
   updateReadout();
 }
@@ -113,6 +116,10 @@ const controls = setupControls(controlsRoot, {
   },
   onShowReferenceChange: (show) => {
     state.showReference = show;
+    render();
+  },
+  onShowShadowChange: (show) => {
+    state.showShadow = show;
     render();
   },
 });

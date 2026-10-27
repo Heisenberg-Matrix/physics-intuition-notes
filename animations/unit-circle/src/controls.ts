@@ -13,6 +13,7 @@ export interface ControlCallbacks {
   onKChange(k: number): void;
   onShowAxesChange(show: boolean): void;
   onShowReferenceChange(show: boolean): void;
+  onShowShadowChange(show: boolean): void;
 }
 
 export interface Controls {
@@ -93,7 +94,15 @@ export function setupControls(root: HTMLElement, cb: ControlCallbacks): Controls
   ref.addEventListener('change', () => cb.onShowReferenceChange(ref.checked));
   refF.row.append(ref);
 
-  root.append(thetaF.row, kF.row, signF.row, axesF.row, refF.row);
+  // ——— sin 影子投影(y 轴) ———
+  const shadowF = field('y 轴影子投影');
+  const shadow = document.createElement('input');
+  shadow.type = 'checkbox';
+  shadow.checked = true;
+  shadow.addEventListener('change', () => cb.onShowShadowChange(shadow.checked));
+  shadowF.row.append(shadow);
+
+  root.append(thetaF.row, kF.row, signF.row, axesF.row, refF.row, shadowF.row);
 
   return {
     setThetaValue(deg: number) {
