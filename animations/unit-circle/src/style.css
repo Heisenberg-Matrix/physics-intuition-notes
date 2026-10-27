@@ -1,0 +1,248 @@
+/* ============================================================
+   unit-circle · 单位圆与 sin 单角变换
+   视觉: 暖黄色草稿纸 + 细腻手绘线条。克制、留白、安静。
+   ============================================================ */
+
+:root {
+  --paper: #f7f0dc;
+  --paper-deep: #efe5c8;
+  --ink: #57534b; /* 低对比深灰 */
+  --ink-soft: #8b8577;
+  --accent: #b4654a; /* 陶土橙 —— sin 专属 */
+  --line: #6b675c; /* 圆与主线段 */
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: Georgia, 'Times New Roman', 'Noto Serif SC', 'Songti SC', serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 253, 244, 0.9), transparent 60%),
+    radial-gradient(circle at 75% 80%, rgba(232, 219, 186, 0.5), transparent 55%),
+    var(--paper);
+  /* 极轻的纸张颗粒: 半透明细点, 几不可察 */
+  background-image:
+    radial-gradient(rgba(120, 108, 82, 0.045) 0.55px, transparent 0.7px),
+    radial-gradient(rgba(120, 108, 82, 0.045) 0.55px, transparent 0.7px);
+  background-size:
+    100% 100%,
+    5px 5px,
+    5px 5px;
+  background-position: 0 0, 0 0, 2.5px 2.5px;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px 64px;
+}
+
+.app {
+  width: 100%;
+  max-width: 660px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ——— 顶部读数 ——— */
+.top {
+  text-align: center;
+}
+.title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.formula {
+  margin: 8px 0 2px;
+  font-size: 17px;
+  font-style: italic;
+  color: var(--ink);
+}
+.values {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ——— 画布 ——— */
+.stage {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+#circle {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  touch-action: none;
+}
+
+.stage svg {
+  width: 100%;
+  height: auto;
+}
+
+/* 圆 */
+.circle {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.4;
+}
+
+/* 坐标轴 */
+.axis-line {
+  stroke: var(--ink-soft);
+  stroke-width: 1;
+}
+.grid-tick {
+  stroke: var(--ink-soft);
+  stroke-width: 1;
+}
+.axis-label,
+.axis-name {
+  fill: var(--ink-soft);
+  font-size: 13px;
+  font-family: Georgia, serif;
+}
+
+/* 原角参照: 同色淡化虚线 */
+.ref {
+  opacity: 1;
+}
+.ref-ray,
+.ref-proj {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 5;
+  opacity: 0.38;
+}
+.ref-point {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 0.6;
+}
+
+/* 活动层: 角度射线 + sin 投影(陶土, 略粗) */
+.active-ray {
+  stroke: var(--ink-soft);
+  stroke-width: 1.5;
+}
+.sin-proj {
+  stroke: var(--accent);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+.right-mark {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+.active-point {
+  fill: var(--accent);
+  stroke: #fff;
+  stroke-width: 1.5;
+  cursor: grab;
+}
+.active-point.active {
+  cursor: grabbing;
+}
+.hit-point {
+  fill: transparent;
+  stroke: none;
+  cursor: grab;
+}
+
+#circle.dragging {
+  cursor: grabbing;
+}
+#circle.dragging .active-point {
+  cursor: grabbing;
+}
+#circle.dragging .sin-proj {
+  stroke-width: 4;
+}
+
+/* ——— 控制面板 ——— */
+.controls {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 22px;
+  padding: 18px 22px;
+  background: rgba(255, 252, 242, 0.6);
+  border: 1px solid rgba(140, 128, 100, 0.35);
+  border-radius: var(--radius);
+}
+.fields {
+  display: contents;
+}
+.field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.field-label {
+  min-width: 84px;
+  color: var(--ink-soft);
+}
+.field-value {
+  color: var(--ink);
+}
+
+/* 滑块 */
+input[type='range'] {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+input[type='number'] {
+  width: 64px;
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid rgba(140, 128, 100, 0.5);
+  border-radius: 6px;
+  background: rgba(255, 253, 246, 0.8);
+  color: var(--ink);
+}
+select {
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid rgba(140, 128, 100, 0.5);
+  border-radius: 6px;
+  background: rgba(255, 253, 246, 0.8);
+  color: var(--ink);
+  cursor: pointer;
+}
+input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
+  body {
+    padding: 24px 14px 48px;
+  }
+}

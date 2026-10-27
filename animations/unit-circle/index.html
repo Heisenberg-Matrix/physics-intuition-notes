@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>单位圆 · sin 单角变换</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <h1 class="title">单位圆 · sin 单角变换</h1>
+        <p class="formula" id="formula"></p>
+        <p class="values" id="values"></p>
+      </header>
+
+      <section class="stage">
+        <svg
+          id="circle"
+          viewBox="-330 -330 660 660"
+          role="img"
+          aria-label="单位圆与 sin 投影的可交互示意图"
+        ></svg>
+      </section>
+
+      <section class="controls" id="controls" aria-label="参数控制"></section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
