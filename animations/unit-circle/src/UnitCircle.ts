@@ -75,7 +75,7 @@ export class UnitCircle {
     );
 
     // 单位圆在最底层、投影与点在上方。
-    const circle = create('circle', { class: 'circle' });
+    const circle = create('circle', { class: 'circle', r: RADIUS });
     svg.append(circle, this.axisG, this.refG, this.activeG);
 
     this.attachDrag();
