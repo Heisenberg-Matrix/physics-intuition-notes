@@ -2,60 +2,72 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const viewport = document.querySelector("#viewport");
-const azimuthOutput = document.querySelector("#azimuth");
-const elevationOutput = document.querySelector("#elevation");
 const rotateButton = document.querySelector("#rotate-toggle");
-const gridButton = document.querySelector("#grid-toggle");
 const resetButton = document.querySelector("#reset-view");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-const HOME_POSITION = new THREE.Vector3(0, 0.6, 3.9);
 const SPHERE_RADIUS = 1;
-const GRID_RADIUS = SPHERE_RADIUS * 1.0025;
+const SPHERE_CENTER = new THREE.Vector3(0, SPHERE_RADIUS, 0);
+const INITIAL_SPIN = -0.4;
+const HOME_SPHERICAL = new THREE.Spherical(
+  1,
+  THREE.MathUtils.degToRad(67),
+  THREE.MathUtils.degToRad(24),
+);
+const HOME_DIRECTION = new THREE.Vector3().setFromSpherical(HOME_SPHERICAL);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-camera.position.copy(HOME_POSITION);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+camera.position
+  .copy(SPHERE_CENTER)
+  .addScaledVector(HOME_DIRECTION, 5);
 
 const renderer = createRenderer();
 viewport.append(renderer.domElement);
 renderer.domElement.setAttribute("aria-hidden", "true");
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 0);
+controls.target.copy(SPHERE_CENTER);
 controls.enableDamping = true;
-controls.dampingFactor = 0.06;
+controls.dampingFactor = 0.07;
 controls.enablePan = false;
-controls.minDistance = 1.75;
-controls.maxDistance = 6;
-controls.rotateSpeed = 0.7;
-controls.zoomSpeed = 0.75;
-controls.autoRotateSpeed = 0.55;
+controls.rotateSpeed = 0.55;
+controls.zoomSpeed = 0.65;
+controls.minPolarAngle = THREE.MathUtils.degToRad(20);
+controls.maxPolarAngle = THREE.MathUtils.degToRad(86);
 
 const globe = new THREE.Group();
-globe.rotation.y = -0.38;
+globe.position.copy(SPHERE_CENTER);
+globe.rotation.y = INITIAL_SPIN;
 scene.add(globe);
 
+const textures = createHandmadeTextures(renderer);
 const sphere = new THREE.Mesh(
   new THREE.SphereGeometry(SPHERE_RADIUS, 128, 96),
-  new THREE.MeshPhysicalMaterial({
-    color: 0x3d6fe0,
-    roughness: 0.36,
-    metalness: 0.04,
-    clearcoat: 0.75,
-    clearcoatRoughness: 0.28,
-    emissive: 0x071a3c,
-    emissiveIntensity: 0.55,
+  new THREE.MeshStandardMaterial({
+    map: textures.map,
+    bumpMap: textures.bumpMap,
+    bumpScale: 0.009,
+    roughness: 0.93,
+    metalness: 0,
   }),
 );
-sphere.name = "sphere";
+sphere.castShadow = true;
 globe.add(sphere);
 
-const graticule = createGraticule(GRID_RADIUS);
-graticule.renderOrder = 1;
-globe.add(graticule);
+const shadowCatcher = new THREE.Mesh(
+  new THREE.PlaneGeometry(16, 16),
+  new THREE.ShadowMaterial({
+    color: 0x4f4436,
+    opacity: 0.18,
+    depthWrite: false,
+  }),
+);
+shadowCatcher.rotation.x = -Math.PI / 2;
+shadowCatcher.receiveShadow = true;
+scene.add(shadowCatcher);
 
-addLights(scene);
+addLights();
 
 let autoRotate = !reduceMotion.matches;
 setAutoRotate(autoRotate);
@@ -64,23 +76,16 @@ rotateButton.addEventListener("click", () => {
   setAutoRotate(!autoRotate);
 });
 
-gridButton.addEventListener("click", () => {
-  const visible = !graticule.visible;
-  graticule.visible = visible;
-  gridButton.setAttribute("aria-pressed", String(visible));
-});
-
 resetButton.addEventListener("click", () => {
+  globe.rotation.set(0, INITIAL_SPIN, 0);
   camera.position
-    .copy(HOME_POSITION)
-    .normalize()
-    .multiplyScalar(homeDistance);
-  controls.target.set(0, 0, 0);
+    .copy(SPHERE_CENTER)
+    .addScaledVector(HOME_DIRECTION, homeDistance);
+  controls.target.copy(SPHERE_CENTER);
   controls.update();
 });
 
-// Dragging or zooming hands control to the viewer; they can restart the
-// rotation from the toolbar.
+// Taking control stops the spin so the current side can be studied.
 controls.addEventListener("start", () => {
   if (autoRotate) setAutoRotate(false);
 });
@@ -98,16 +103,21 @@ reduceMotion.addEventListener("change", (event) => {
   if (event.matches) setAutoRotate(false);
 });
 
-let homeDistance = HOME_POSITION.length();
-let lastReadoutUpdate = -Infinity;
-
+let homeDistance = 5;
 const resizeObserver = new ResizeObserver(resize);
 resizeObserver.observe(viewport);
 resize();
 
-renderer.setAnimationLoop((time) => {
+const clock = new THREE.Clock();
+
+renderer.setAnimationLoop(() => {
+  const delta = Math.min(clock.getDelta(), 0.05);
+
+  if (autoRotate) {
+    globe.rotation.y += delta * 0.16;
+  }
+
   controls.update();
-  updateReadout(time);
   renderer.render(scene, camera);
 });
 
@@ -121,7 +131,9 @@ function createRenderer() {
     instance.setClearColor(0x000000, 0);
     instance.outputColorSpace = THREE.SRGBColorSpace;
     instance.toneMapping = THREE.ACESFilmicToneMapping;
-    instance.toneMappingExposure = 1.05;
+    instance.toneMappingExposure = 1.12;
+    instance.shadowMap.enabled = true;
+    instance.shadowMap.type = THREE.PCFSoftShadowMap;
     return instance;
   } catch (error) {
     const message = document.createElement("p");
@@ -133,118 +145,140 @@ function createRenderer() {
   }
 }
 
-function addLights(root) {
-  const sky = new THREE.HemisphereLight(0xb8d3ff, 0x050815, 1.05);
-  root.add(sky);
+function addLights() {
+  const sky = new THREE.HemisphereLight(0xfff8e8, 0xc8b79f, 0.95);
+  scene.add(sky);
 
-  const key = new THREE.DirectionalLight(0xfff1dd, 3.4);
-  key.position.set(-3.6, 4.2, 4.6);
-  root.add(key);
+  const key = new THREE.DirectionalLight(0xfff0d8, 2.9);
+  key.position.set(-2, 11, 3);
+  key.target.position.set(0, 0.9, 0);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -3;
+  key.shadow.camera.right = 3;
+  key.shadow.camera.top = 3;
+  key.shadow.camera.bottom = -3;
+  key.shadow.camera.near = 1;
+  key.shadow.camera.far = 20;
+  key.shadow.bias = -0.0003;
+  key.shadow.normalBias = 0.02;
+  key.shadow.radius = 6;
+  scene.add(key, key.target);
 
-  const fill = new THREE.DirectionalLight(0x3f7dff, 1.35);
-  fill.position.set(4.4, -1.4, 2.2);
-  root.add(fill);
+  const fill = new THREE.DirectionalLight(0xd5e3dd, 0.45);
+  fill.position.set(5, 3, 4);
+  scene.add(fill);
 
-  const rim = new THREE.DirectionalLight(0x72dcff, 2.6);
-  rim.position.set(0.8, 1.4, -4.8);
-  root.add(rim);
+  const rim = new THREE.DirectionalLight(0xffe4bf, 0.75);
+  rim.position.set(2, 4, -5);
+  scene.add(rim);
 }
 
 /**
- * Latitude rings and longitude arcs slightly outside the sphere surface.
- * They give the otherwise uniform ball a visible frame of reference.
+ * Soft, hand-worked surface: low-contrast mottling plus fine clay-like flecks.
+ * The pattern is drawn with a small horizontal wrap so the UV seam stays hidden.
  */
-function createGraticule(radius) {
-  const group = new THREE.Group();
-  const minorMaterial = new THREE.LineBasicMaterial({
-    color: 0xa8c3ff,
-    transparent: true,
-    opacity: 0.26,
-    depthWrite: false,
-  });
-  const equatorMaterial = new THREE.LineBasicMaterial({
-    color: 0xffc97d,
-    transparent: true,
-    opacity: 0.68,
-    depthWrite: false,
-  });
+function createHandmadeTextures(renderer) {
+  const random = mulberry32(20261027);
+  const map = createSpeckledTexture(1024, 512, {
+    base: "#789789",
+    light: "166,183,165",
+    dark: "94,118,106",
+    fleckLight: "238,228,206",
+    fleckDark: "68,85,75",
+    blobs: 28,
+    flecks: 1900,
+  }, random);
 
-  const circleSegments = 192;
+  const bumpMap = createSpeckledTexture(512, 256, {
+    base: "#808080",
+    light: "156,156,156",
+    dark: "103,103,103",
+    fleckLight: "190,190,190",
+    fleckDark: "65,65,65",
+    blobs: 22,
+    flecks: 1200,
+  }, random, THREE.NoColorSpace);
 
-  for (let latitude = -60; latitude <= 60; latitude += 30) {
-    const phi = THREE.MathUtils.degToRad(latitude);
-    const ringRadius = Math.cos(phi) * radius;
-    const y = Math.sin(phi) * radius;
-    const points = [];
-
-    for (let i = 0; i < circleSegments; i += 1) {
-      const theta = (i / circleSegments) * Math.PI * 2;
-      points.push(
-        new THREE.Vector3(
-          Math.cos(theta) * ringRadius,
-          y,
-          Math.sin(theta) * ringRadius,
-        ),
-      );
-    }
-
-    group.add(
-      new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(points),
-        latitude === 0 ? equatorMaterial : minorMaterial,
-      ),
-    );
+  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  for (const texture of [map, bumpMap]) {
+    texture.anisotropy = anisotropy;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
   }
 
-  const meridianCount = 12;
-  const meridianSegments = 96;
+  map.colorSpace = THREE.SRGBColorSpace;
+  bumpMap.colorSpace = THREE.NoColorSpace;
 
-  for (let i = 0; i < meridianCount; i += 1) {
-    const longitude = (i / meridianCount) * Math.PI * 2;
-    const points = [];
+  return { map, bumpMap };
+}
 
-    for (let j = 0; j <= meridianSegments; j += 1) {
-      const latitude = -Math.PI / 2 + (j / meridianSegments) * Math.PI;
-      const ringRadius = Math.cos(latitude) * radius;
-      points.push(
-        new THREE.Vector3(
-          Math.cos(longitude) * ringRadius,
-          Math.sin(latitude) * radius,
-          Math.sin(longitude) * ringRadius,
-        ),
+function createSpeckledTexture(width, height, palette, random, colorSpace) {
+  const surface = document.createElement("canvas");
+  surface.width = width;
+  surface.height = height;
+
+  const ctx = surface.getContext("2d");
+  ctx.fillStyle = palette.base;
+  ctx.fillRect(0, 0, width, height);
+
+  for (let i = 0; i < palette.blobs; i += 1) {
+    const x = random() * width;
+    const y = random() * height;
+    const radius = 35 + random() * 150;
+    const color = random() > 0.48 ? palette.light : palette.dark;
+    const alpha = 0.045 + random() * 0.08;
+
+    for (const offset of [-width, 0, width]) {
+      const gradient = ctx.createRadialGradient(
+        x + offset,
+        y,
+        0,
+        x + offset,
+        y,
+        radius,
       );
+      gradient.addColorStop(0, `rgba(${color},${alpha})`);
+      gradient.addColorStop(0.6, `rgba(${color},${alpha * 0.55})`);
+      gradient.addColorStop(1, `rgba(${color},0)`);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x + offset - radius, y - radius, radius * 2, radius * 2);
     }
-
-    group.add(
-      new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(points),
-        minorMaterial,
-      ),
-    );
   }
 
-  return group;
+  for (let i = 0; i < palette.flecks; i += 1) {
+    const x = random() * width;
+    const y = random() * height;
+    const radius = 0.35 + random() * 1.45;
+    const light = random() > 0.45;
+    const alpha = 0.035 + random() * 0.1;
+
+    ctx.fillStyle = `rgba(${light ? palette.fleckLight : palette.fleckDark},${alpha})`;
+    for (const offset of [-width, 0, width]) {
+      ctx.beginPath();
+      ctx.arc(x + offset, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(surface);
+  texture.colorSpace = colorSpace;
+  return texture;
+}
+
+function mulberry32(seed) {
+  return function random() {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function setAutoRotate(enabled) {
   autoRotate = enabled;
-  controls.autoRotate = enabled;
   rotateButton.setAttribute("aria-pressed", String(enabled));
-}
-
-function updateReadout(time) {
-  if (time - lastReadoutUpdate < 80) return;
-  lastReadoutUpdate = time;
-
-  const azimuth = Math.round(
-    THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()),
-  );
-  const elevation = Math.round(
-    90 - THREE.MathUtils.radToDeg(controls.getPolarAngle()),
-  );
-
-  azimuthOutput.textContent = `${azimuth}°`;
-  elevationOutput.textContent = `${elevation}°`;
 }
 
 function resize() {
@@ -256,27 +290,24 @@ function resize() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-  renderer.setPixelRatio(pixelRatio);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(width, height, false);
 
-  // Keep the sphere comfortably inside the viewport on both wide and tall
-  // screens, leaving room for the title and the toolbar.
+  // Fit the ball inside the open space, independent of the camera angle.
   const aspect = width / height;
   const diameter =
     aspect < 0.85
-      ? Math.min(width * 0.86, height * 0.5)
-      : Math.min(width * 0.42, height * 0.68);
+      ? Math.min(width * 0.8, height * 0.44)
+      : Math.min(width * 0.4, height * 0.62);
   const halfFovTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
   const angularRadius = Math.atan((diameter / height) * halfFovTangent);
 
   homeDistance = SPHERE_RADIUS / Math.sin(angularRadius);
-  controls.minDistance = Math.max(1.6, homeDistance * 0.55);
-  controls.maxDistance = Math.max(8, homeDistance * 2.2);
+  controls.minDistance = Math.max(2.1, homeDistance * 0.6);
+  controls.maxDistance = homeDistance * 2.4;
 
-  // Resize the viewing distance without changing the current orbit angle.
   const direction = camera.position.clone().sub(controls.target);
-  if (direction.lengthSq() < 1e-8) direction.copy(HOME_POSITION);
+  if (direction.lengthSq() < 1e-8) direction.copy(HOME_DIRECTION);
   direction.normalize();
   camera.position
     .copy(controls.target)

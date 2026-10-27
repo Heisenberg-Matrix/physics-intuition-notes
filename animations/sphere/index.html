@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#04060c" />
-    <title>Sphere — 从四周观察球体</title>
+    <meta name="theme-color" content="#efe7d7" />
+    <title>一个球 — Sphere</title>
     <meta
       name="description"
-      content="用 Three.js 的 SphereGeometry 渲染一个可以从任意方向观察的三维球体。"
+      content="一个具有手作质感的三维球体，在柔和自然光下可以从任意方向观察。"
     />
     <link rel="stylesheet" href="./style.css" />
     <script type="importmap">
@@ -25,35 +25,20 @@
         id="viewport"
         class="viewport"
         role="img"
-        aria-label="可拖动旋转、缩放的三维球体"
+        aria-label="被柔和光线照亮的手作质感球体，可拖动旋转"
       ></div>
 
       <header class="hud">
-        <p class="eyebrow">Three.js · SphereGeometry</p>
-        <h1>从每一面看球</h1>
-        <p class="intro">
-          拖动旋转，滚轮缩放。球面上没有哪一个方向是特殊的——<br />
-          无论从哪里看，轮廓都同样是一个圆。
-        </p>
+        <p class="kicker">几何小品 · 01</p>
+        <h1>一个球</h1>
+        <p class="intro">转动它，从任意方向看。<br />没有正面，也没有背面。</p>
       </header>
-
-      <aside class="readout" aria-hidden="true">
-        <div>
-          <span>方位角</span>
-          <strong id="azimuth">0°</strong>
-        </div>
-        <div>
-          <span>仰角</span>
-          <strong id="elevation">0°</strong>
-        </div>
-      </aside>
 
       <div class="toolbar" role="group" aria-label="视图控制">
         <button id="rotate-toggle" type="button" aria-pressed="true">
-          <span class="status-dot" aria-hidden="true"></span>
+          <span class="dot" aria-hidden="true"></span>
           自动旋转
         </button>
-        <button id="grid-toggle" type="button" aria-pressed="true">经纬网</button>
         <button id="reset-view" type="button">重置视角</button>
       </div>
 

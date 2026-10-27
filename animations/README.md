@@ -9,4 +9,4 @@
 ## 实验列表
 
 - [Water Lab — 2D 粒子水流交互实验](water-lab/README.md)：斜抛 / 平抛 + Metaball 融球水流的实时物理 Demo，可调发射角度、力度、重力、发射率等参数。
-- [Sphere — 从四周观察球体](sphere/README.md)：Three.js `SphereGeometry` 三维球体，可拖动旋转、缩放、切换自动旋转与经纬网。
+- [一个球 — Sphere](sphere/README.md)：Three.js `SphereGeometry` 手作质感球体，哑光材质、柔和自然光与落地投影，可拖动观察。
