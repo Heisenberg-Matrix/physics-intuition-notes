@@ -160,6 +160,18 @@ body {
   filter: brightness(1.3);
 }
 
+/* sin 影子投影: 水平投到 y 轴的淡化虚线 */
+.sin-shadow {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 5;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+.sin-shadow.hot {
+  opacity: 0.7;
+}
+
 /* sin 正负符号: 同陶土风格, 与投影一起高亮 */
 .sin-sign {
   fill: var(--accent);

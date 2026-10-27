@@ -56,6 +56,7 @@ export class UnitCircle {
 
   private readonly activeRay: SVGLineElement;
   private readonly activeProj: SVGLineElement;
+  private readonly sinShadow: SVGLineElement;
   private readonly sinSign: SVGTextElement;
   private readonly activePoint: SVGCircleElement;
 
@@ -88,6 +89,8 @@ export class UnitCircle {
     this.activeG = create('g', { class: 'active' });
     this.activeRay = create('line', { class: 'active-ray' });
     this.activeProj = create('line', { class: 'sin-proj' });
+    // sin 影子投影: 从 P 水平投到 y 轴(淡化虚线), 表征 sin 值的高度。
+    this.sinShadow = create('line', { class: 'sin-shadow' });
     // sin 正负符号: 跟随投影移动, 与投影同高亮。
     this.sinSign = create('text', {
       class: 'sin-sign',
@@ -106,6 +109,7 @@ export class UnitCircle {
     this.activeG.append(
       this.activeRay,
       this.activeProj,
+      this.sinShadow,
       this.sinSign,
       this.activePoint,
     );
@@ -130,6 +134,11 @@ export class UnitCircle {
     this.activeProj.setAttribute('y1', String(a.y));
     this.activeProj.setAttribute('x2', String(a.x));
     this.activeProj.setAttribute('y2', '0');
+    // 影子投影: 从 P 水平投到 y 轴(x=0)
+    this.sinShadow.setAttribute('x1', '0');
+    this.sinShadow.setAttribute('y1', String(a.y));
+    this.sinShadow.setAttribute('x2', String(a.x));
+    this.sinShadow.setAttribute('y2', String(a.y));
 
     this.updateSign(a);
 
@@ -185,6 +194,7 @@ export class UnitCircle {
     this.toggleHot(this.activeRay, target === 'radius');
     const sinOn = target === 'sin';
     this.toggleHot(this.activeProj, sinOn);
+    this.toggleHot(this.sinShadow, sinOn);
     this.toggleHot(this.sinSign, sinOn);
   }
 
