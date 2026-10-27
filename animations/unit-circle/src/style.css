@@ -160,6 +160,36 @@ body {
   filter: brightness(1.3);
 }
 
+/* sin 正负符号: 同陶土风格, 与投影一起高亮 */
+.sin-sign {
+  fill: var(--accent);
+  font-size: 30px;
+  font-weight: 700;
+  font-family: Georgia, serif;
+  transition: font-size 0.15s ease, filter 0.15s ease;
+}
+.sin-sign.hot {
+  font-size: 37px;
+  filter: drop-shadow(0 0 3px rgba(180, 101, 74, 0.45));
+}
+/* 正负切换: 轻快的上滑显现 */
+.sin-sign.sign-flip {
+  animation: sign-slide-in 0.24s ease-out;
+}
+@keyframes sign-slide-in {
+  0% {
+    opacity: 0;
+    transform: translate(0, 10px);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
 .right-mark {
   fill: none;
   stroke: var(--accent);

@@ -56,6 +56,7 @@ export class UnitCircle {
 
   private readonly activeRay: SVGLineElement;
   private readonly activeProj: SVGLineElement;
+  private readonly sinSign: SVGTextElement;
   private readonly activePoint: SVGCircleElement;
 
   private readonly refRay: SVGLineElement;
@@ -68,6 +69,8 @@ export class UnitCircle {
   private active: HitTarget | null = null;
   /** 是否正在拖动圆周点。 */
   private dragging = false;
+  /** 上一次渲染的 sin 符号; 变化时触发切换动效。 */
+  private lastSign = '';
 
   constructor(svg: SVGSVGElement, private readonly handlers: UnitCircleHandlers) {
     this.svg = svg;
@@ -85,6 +88,12 @@ export class UnitCircle {
     this.activeG = create('g', { class: 'active' });
     this.activeRay = create('line', { class: 'active-ray' });
     this.activeProj = create('line', { class: 'sin-proj' });
+    // sin 正负符号: 跟随投影移动, 与投影同高亮。
+    this.sinSign = create('text', {
+      class: 'sin-sign',
+      'text-anchor': 'middle',
+      'aria-hidden': 'true',
+    });
     this.activePoint = create('circle', {
       class: 'active-point',
       r: '6',
@@ -94,7 +103,12 @@ export class UnitCircle {
       'aria-valuemin': 0,
       'aria-valuemax': 360,
     });
-    this.activeG.append(this.activeRay, this.activeProj, this.activePoint);
+    this.activeG.append(
+      this.activeRay,
+      this.activeProj,
+      this.sinSign,
+      this.activePoint,
+    );
 
     const circle = create('circle', { class: 'circle', r: RADIUS });
     svg.append(circle, this.axisG, this.refG, this.activeG);
@@ -117,6 +131,8 @@ export class UnitCircle {
     this.activeProj.setAttribute('x2', String(a.x));
     this.activeProj.setAttribute('y2', '0');
 
+    this.updateSign(a);
+
     this.setCircle(this.activePoint, a);
     const ang = normalizeAngle(Math.atan2(-a.y, a.x));
     this.activePoint.setAttribute('aria-valuenow', String(Math.round(toDegrees(ang))));
@@ -135,9 +151,28 @@ export class UnitCircle {
     this.refG.style.display = view.showReference ? '' : 'none';
   }
 
-  private setCircle(el: SVGCircleElement, p: Vec2): void {
+  private setCircle(el: SVGElement, p: Vec2): void {
     el.setAttribute('cx', String(p.x));
     el.setAttribute('cy', String(p.y));
+  }
+
+  /** 更新 sin 正负符号: 位置随投影走, 符号切换时触发滑动动效。 */
+  private updateSign(a: Vec2): void {
+    const sgn = Math.abs(a.y) < 4 ? '0' : a.y < 0 ? '+' : '−'; // |a.y|<4px ≈ 越过 x 轴瞬间
+    // 放在投影线段外侧稍远一点, 贴近线段但避开圆心/点。
+    const x = a.x + (a.x >= 0 ? 24 : -24);
+    const y = a.y / 2 + 7;
+    this.sinSign.setAttribute('x', String(x));
+    this.sinSign.setAttribute('y', String(y));
+    if (this.sinSign.textContent !== sgn) this.sinSign.textContent = sgn;
+
+    if (sgn !== this.lastSign) {
+      this.lastSign = sgn;
+      // 重触发滑动动画: 先移除再强制回排, 重新添加。
+      this.sinSign.classList.remove('sign-flip');
+      void this.sinSign.getBoundingClientRect();
+      this.sinSign.classList.add('sign-flip');
+    }
   }
 
   /* ————————————————— 交互 ————————————————— */
@@ -148,7 +183,9 @@ export class UnitCircle {
     this.active = target;
     this.toggleHot(this.activePoint, target === 'point');
     this.toggleHot(this.activeRay, target === 'radius');
-    this.toggleHot(this.activeProj, target === 'sin');
+    const sinOn = target === 'sin';
+    this.toggleHot(this.activeProj, sinOn);
+    this.toggleHot(this.sinSign, sinOn);
   }
 
   private toggleHot(el: SVGElement, on: boolean): void {
