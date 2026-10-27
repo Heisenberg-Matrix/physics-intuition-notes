@@ -163,9 +163,9 @@ body {
 /* sin 影子投影: 沿 y 轴的淡化虚线, 与 sin 平行的投影 */
 .sin-shadow {
   stroke: var(--accent);
-  stroke-width: 1.4;
-  stroke-dasharray: 3 5;
-  opacity: 0.45;
+  stroke-width: 4;
+  stroke-dasharray: 4 4;
+  opacity: 0.95;
 }
 
 /* sin 正负符号: 同陶土风格, 与投影一起高亮 */
