@@ -11,3 +11,4 @@
 - [Water Lab — 2D 粒子水流交互实验](water-lab/README.md)：斜抛 / 平抛 + Metaball 融球水流的实时物理 Demo，可调发射角度、力度、重力、发射率等参数。
 - [一个球 — Sphere 球体](sphere/README.md)：Three.js `SphereGeometry` 手作质感球体，哑光材质、柔和自然光与落地投影，可拖动观察。
 - [单位圆 · sin 单角变换](unit-circle/README.md)：Vite + TypeScript + SVG 交互式单位圆，拖动圆周点或滑块调整 θ，演示 θ′= sign·θ + kπ 的 sin 投影，可隐藏坐标系与原角参照。
+- [Sum 1→n — 视觉证明](sum-1-to-n/README.md)：Manim 竖屏无字证明动画，两级阶梯旋转 180° 拼成 n×(n+1) 长方形，导出 1080×1920 MP4。

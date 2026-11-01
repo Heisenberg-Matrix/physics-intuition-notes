@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1 + 2 + ⋯ + n 的无字证明</title>
+  <style>
+    :root {
+      --bg: #faf6ef;
+      --ink: #3b3a36;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+    }
+    video {
+      display: block;
+      height: calc(100vh - 96px);
+      max-height: 1920px;
+      width: auto;
+      max-width: 100%;
+      border-radius: 6px;
+      background: #faf6ef;
+      box-shadow: 0 12px 40px rgba(59, 58, 54, 0.12);
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      opacity: 0.55;
+    }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <video
+    src="sum-1-to-n.mp4"
+    poster="poster.jpg"
+    controls
+    loop
+    muted
+    playsinline
+    preload="metadata"
+    aria-label="1 + 2 + … + n = n(n + 1)/2 的无字证明动画"
+  ></video>
+  <p>1 + 2 + ⋯ + n = n(n + 1)/2 · <a href="sum-1-to-n.mp4">下载 MP4</a></p>
+</body>
+</html>
