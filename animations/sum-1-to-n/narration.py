@@ -32,6 +32,25 @@ NARRATION = {
     "formula": "这个长方形由两份相同的阶梯拼成，所以一份正好是它的一半。",
 }
 
+# “行”是多音字：本稿里全部表示 row，应读 háng；Edge TTS 默认读成 xíng。
+# 合成前用同音字“航”引导发音（听感仍是 háng），送进语音服务的文本因此与稿面不同。
+PRONUNCIATION = {
+    "第几行": "第几航",
+    "中间的行": "中间的航",
+    "最下面一行": "最下面一航",
+    "每一行": "每一航",
+    "每行": "每航",
+    "n 行": "n 航",
+}
+
+
+def speakable(text: str) -> str:
+    """把稿面文字换成 TTS 能读对的同音写法。"""
+    for written, spoken in PRONUNCIATION.items():
+        text = text.replace(written, spoken)
+    return text
+
+
 # 每句之间的呼吸间隔（秒），避免上一句刚结束就进入下一个动作。
 PAUSE = 0.20
 
@@ -66,7 +85,7 @@ class EdgeTTSService(SpeechService):
         self, text: str, cache_dir: str = None, path: str = None, **kwargs
     ) -> dict:
         cache_dir = Path(cache_dir) if cache_dir is not None else Path(self.cache_dir)
-        input_text = remove_bookmarks(text)
+        input_text = speakable(remove_bookmarks(text))
         input_data = {
             "input_text": input_text,
             "service": "edge-tts",
