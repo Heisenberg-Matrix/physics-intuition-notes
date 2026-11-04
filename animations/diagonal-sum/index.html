@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1 + 2 + ⋯ + n + ⋯ + 2 + 1 = n² · 手绘视觉证明</title>
+  <style>
+    :root {
+      --bg: #faf6ef;
+      --ink: #4b4740;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "KaiTi", "STKaiti", "Microsoft YaHei", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+    }
+    video {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: calc(100vh - 96px);
+      border-radius: 6px;
+      background: var(--bg);
+      box-shadow: 0 12px 40px rgba(75, 71, 64, 0.12);
+    }
+    p {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      opacity: 0.58;
+    }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <video
+    src="diagonal-sum.mp4"
+    poster="poster.jpg"
+    controls
+    loop
+    playsinline
+    preload="metadata"
+    aria-label="1 + 2 + 加到 n 再加回 1 等于 n 的平方，中文解说手绘视觉证明"
+  ></video>
+  <p>中文解说 · 换个角度看见 n² · <a href="diagonal-sum.mp4">下载 MP4</a></p>
+</body>
+</html>

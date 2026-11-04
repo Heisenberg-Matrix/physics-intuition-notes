@@ -12,3 +12,4 @@
 - [一个球 — Sphere 球体](sphere/README.md)：Three.js `SphereGeometry` 手作质感球体，哑光材质、柔和自然光与落地投影，可拖动观察。
 - [单位圆 · sin 单角变换](unit-circle/README.md)：Vite + TypeScript + SVG 交互式单位圆，拖动圆周点或滑块调整 θ，演示 θ′= sign·θ + kπ 的 sin 投影，可隐藏坐标系与原角参照。
 - [Sum 1→n — 中文解说视觉证明](sum-1-to-n/README.md)：Manim 竖屏证明动画，省略号压缩阶梯复制旋转 180° 拼成 n×(n+1) 长方形，配中文解说与 BGM，导出 1080×1920 MP4。
+- [对角线和 — 1+2+…+n+…+2+1 = n²](diagonal-sum/README.md)：Manim 手绘铅笔风竖屏短片，5×5 方阵沿斜线数出 1…5…1，拼成 n²；配中文解说、关键词字幕与极轻音效，约 29 秒。
