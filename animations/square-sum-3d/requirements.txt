@@ -1,0 +1,12 @@
+# Python 3.10+（本仓库用 3.10.11 验证）
+# manim-voiceover 需用 --no-deps 安装，避免替换已装好的 manim / click / cloup：
+#   pip install -r requirements.txt
+#   pip install --no-deps manim-voiceover==0.3.7
+manim==0.19.1
+numpy>=1.26
+edge-tts>=7.0
+mutagen>=1.47
+python-slugify>=8.0
+python-dotenv>=0.21
+sox>=1.4.1,<2
+# 另外需要 PATH 中的 ffmpeg；Windows 可用本仓库的 .venv/Scripts/ffmpeg.exe。

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>三个平方阶梯体，拼出平方和公式</title>
+  <style>
+    :root {
+      --bg: #faf6ef;
+      --ink: #45423c;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+    }
+    video {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: calc(100vh - 96px);
+      border-radius: 6px;
+      background: var(--bg);
+      box-shadow: 0 12px 40px rgba(69, 66, 60, 0.12);
+    }
+    p {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      opacity: 0.58;
+    }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <video
+    src="square-sum-3d.mp4"
+    poster="poster.jpg"
+    controls
+    loop
+    playsinline
+    preload="metadata"
+    aria-label="三个平方阶梯体积木经过旋转平移拼成平方和公式，中文解说三维动画"
+  ></video>
+  <p>中文解说 · 三块刚体拼出 n(n+1)(2n+1)/6 · <a href="square-sum-3d.mp4">下载 MP4</a></p>
+</body>
+</html>
