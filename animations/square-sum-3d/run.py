@@ -42,6 +42,7 @@ def run_validation() -> None:
         "rigid_copy",
         "decomposes",
         "equivalent_height",
+        "dissection",
         "path_checks",
     ):
         print(f"{key}: {report[key]}")
@@ -90,8 +91,8 @@ def export_final_video(preview: bool = False) -> Path:
     return target
 
 
-def make_poster(video: Path, at: float = 55.0) -> None:
-    """取体积公式完整呈现的 3/4 视角做网页封面，没有 ffmpeg 时跳过。"""
+def make_poster(video: Path, at: float = 57.0) -> None:
+    """取 3S 体积公式完整呈现的 3/4 视角做网页封面，没有 ffmpeg 时跳过。"""
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
         candidate = ROOT / ".venv" / "Scripts" / "ffmpeg.exe"

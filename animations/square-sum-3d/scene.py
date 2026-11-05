@@ -153,6 +153,17 @@ def make_cube(cell, color):
     return cube
 
 
+def make_half_cube(cell, color, upper: bool):
+    """把顶层单位方块沿水平中面切成两半，只改变厚度，不缩放底面积。
+
+    上半与下半各自是一块 ½ 厚的三角棱柱；两者能通过刚体旋转互补。
+    """
+    cube = make_cube(cell, color)
+    cube.stretch(0.5, 2)
+    cube.shift(OUT * (SIDE / 4 if upper else -SIDE / 4))
+    return cube
+
+
 def build_piece(cells, color, center_world=None):
     """按格子集合建一个 VGroup；可选地把质心平移到 center_world。"""
     cells = tuple(cells)
@@ -214,8 +225,8 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
         self.title = None
         self.question = None
         self.copies_formula = None
-        self.top_formula = None
-        self.top_counts = None
+        self.top_lower = None
+        self.top_upper = None
 
         self.build_geometry()
         self.animate_sequence()
@@ -395,24 +406,33 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
             self.show_box_dimensions()
             self.wait(0.4)
 
-        with self.voiceover(text=LINES["top_count"]) as tracker:
-            self.mark("top_count", tracker)
-            self.show_subtitle("top_count")
+        with self.voiceover(text=LINES["split"]) as tracker:
+            self.mark("split", tracker)
+            self.show_subtitle("split")
+            # 切开顶部时先收走旧的“高 = n”标注，避免和新高度冲突。
+            self.play(FadeOut(self.dim_group), run_time=0.3)
             self.play(
                 *[a for cube in self.top_cubes for a in self.state_anims(cube, 0.0)],
                 *[a for cube in self.box_cubes for a in self.state_anims(cube, 0.72)],
                 run_time=0.5,
             )
-            self.highlight_top_rows(tracker)
+            self.cut_top_layer()
             self.wait(0.2)
 
-        with self.voiceover(text=LINES["formula"]) as tracker:
-            self.mark("formula", tracker)
-            self.show_subtitle("formula")
+        with self.voiceover(text=LINES["height"]) as tracker:
+            self.mark("height", tracker)
+            self.show_subtitle("height")
             self.play(
                 *[a for cube in self.box_cubes for a in self.state_anims(cube, 0.0)],
                 run_time=0.5,
             )
+            # 顶面现在在 z = n + ½，重画三条棱与高度标注。
+            self.show_box_dimensions(height_top=1.99, height_label="n+½")
+            self.wait(0.3)
+
+        with self.voiceover(text=LINES["formula"]) as tracker:
+            self.mark("formula", tracker)
+            self.show_subtitle("formula")
             self.show_volume_formula(tracker)
 
         with self.voiceover(text=LINES["answer"]) as tracker:
@@ -581,8 +601,53 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
             if hasattr(face, "set_stroke"):
                 face.set_stroke(color=INK, width=1.05, opacity=0.9)
 
+    # ------------------------------------------------------------ 顶层的半高拼合
+    def cut_top_layer(self):
+        """把顶层从中间切开，上半绕底面中心转 180° 补进下半的空缺。
+
+        顶层是 1 块厚的三角棱柱。沿水平中面切开后，上半与下半各厚 ½；
+        矩形底面 4×5 关于中心 180° 对称，所以上半旋转后恰好填满
+        下半没有覆盖的那一半。拼完是一块 4×5×½ 的扁长方体。
+        """
+        colors = {}
+        for name, color in (("A", A_COL), ("B", B_COL), ("C", C_COL)):
+            for cell in self.pieces[name].cells:
+                if cell[2] == 4:
+                    colors[cell] = color
+
+        self.top_lower = VGroup()
+        self.top_upper = VGroup()
+        for cell in sorted(colors):
+            self.top_lower.add(make_half_cube(cell, colors[cell], upper=False))
+            self.top_upper.add(make_half_cube(cell, colors[cell], upper=True))
+
+        # 原单位方块淡出，换成上下两个半层；接缝就是“切开”的那一刀。
+        self.play(FadeOut(VGroup(*self.top_cubes)), run_time=0.25)
+        self.play(FadeIn(self.top_lower), FadeIn(self.top_upper), run_time=0.3)
+        self.wait(0.2)
+
+        # 先抬起，再绕底面中心转半圈，最后落到下半层的补位。
+        self.play(self.top_upper.animate.shift(OUT * 1.8), run_time=0.7)
+        # 网格方块以整数点为中心，4×5 底面的几何中心正好在世界原点。
+        center = self.top_upper.get_center()
+        self.play(
+            RigidRotation(
+                self.top_upper,
+                angle=PI,
+                axis=OUT,
+                about_point=[0.0, 0.0, center[2]],
+                run_time=1.3,
+            )
+        )
+        dz = self.top_lower.get_center()[2] - self.top_upper.get_center()[2]
+        self.play(
+            self.top_upper.animate.shift(OUT * dz),
+            run_time=0.9,
+            rate_func=ease_out,
+        )
+
     # ------------------------------------------------------------ 尺寸与公式
-    def show_box_dimensions(self):
+    def show_box_dimensions(self, height_top: float = 1.49, height_label: str = "n"):
         """在长方体可见轮廓外侧标出 n（宽）、n+1（深）、n（高）。
 
         标注是屏幕固定文字：镜头在这个镜头里不再旋转，所以箭头与边框始终贴合；
@@ -592,7 +657,7 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
             "near": (-1.5, -2.0, -2.0),
             "right": (2.5, -2.0, -2.0),
             "back": (-1.5, 3.0, -2.0),
-            "back_top": (-1.5, 3.0, 1.49),
+            "back_top": (-1.5, 3.0, height_top),
         }
         p = {
             key: np.array(self.camera.project_point(np.array(value, dtype=float)))[:2]
@@ -610,7 +675,7 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
         specs = [
             ("near", "right", -1.0, 0.55, "n"),      # 宽 4
             ("near", "back", 1.0, 0.55, "n+1"),      # 深 5
-            ("back", "back_top", 1.0, 0.55, "n"),    # 高 4
+            ("back", "back_top", 1.0, 0.55, height_label),  # 高 n（切开后 n+½）
         ]
         arrows = VGroup()
         labels = VGroup()
@@ -632,6 +697,11 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
             label.move_to(np.append((p[a] + p[b]) / 2 + n * (gap + 0.52), 0.0))
             labels.add(label)
 
+        # “n+½”比“n”宽，缩小一号并往内挪，保证左侧仍留出竖屏安全边距。
+        if height_label != "n":
+            labels[-1].scale(32 / 38)
+            labels[-1].shift(RIGHT * 0.12)
+
         self.add_fixed_in_frame_mobjects(arrows, labels)
         self.play(
             *[Create(arrow) for arrow in arrows],
@@ -639,41 +709,6 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
             run_time=0.9,
         )
         self.dim_group = VGroup(arrows, labels)
-
-    def highlight_top_rows(self, tracker):
-        rows = []
-        for x in range(4):
-            cells = [(x, y, 4) for y in range(x + 1)]
-            cubes = [c for c in self.top_cubes if round(c.get_center()[0] + 1.5) == x]
-            rows.append(cubes)
-        step = max(0.7, tracker.duration / 4)
-        counts = VGroup()
-        for x, cubes in enumerate(rows):
-            label = math_text(str(x + 1), 34, ACCENT)
-            pos = grid_to_world((x, x + 0.85, 4.7))
-            label.move_to(pos)
-            self.add_fixed_orientation_mobjects(label)
-            tint_anims = []
-            for cube in cubes:
-                tint_anims += self.tint_anims(cube, ACCENT, 0.55)
-            self.play(
-                *tint_anims,
-                FadeIn(label, scale=0.8),
-                run_time=0.36,
-            )
-            counts.add(label)
-            self.wait(max(0.15, step - 0.36))
-        self.top_counts = counts
-        formula = VGroup(
-            math_text("1 + 2 + ⋯ + n =", 36, INK),
-            self.fraction("n(n+1)", "2", 32, INK),
-        ).arrange(RIGHT, buff=0.16)
-        self.fit_width(formula)
-        formula.move_to([0, -5.35, 0])
-        self.add_fixed_in_frame_mobjects(formula)
-        self.play(FadeIn(formula, shift=UP * 0.08), run_time=0.5)
-        self.top_formula = formula
-        self.wait(0.3)
 
     def tint_anims(self, cube, color, amount=0.5):
         anims = []
@@ -701,45 +736,27 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
         )
 
     def show_volume_formula(self, tracker):
-        # 顶部台阶的计数公式先退场，避免与体积公式叠在同一行。
-        if self.top_formula is not None:
-            self.play(FadeOut(self.top_formula, shift=DOWN * 0.06), run_time=0.3)
-            self.top_formula = None
-        left = math_text("3S = n(n+1)·n +", 40, INK)
-        frac = self.fraction("n(n+1)", "2", 32, INK)
-        line1 = VGroup(left, frac).arrange(RIGHT, buff=0.16)
-        self.fit_width(line1)
-        line1.move_to([0, -5.35, 0])
-        self.add_fixed_in_frame_mobjects(line1)
-        self.play(FadeIn(line1, shift=UP * 0.1), run_time=0.6)
-        self.wait(0.5)
-
-        line2 = math_text("3S = n(n+1)(n + ½)", 42, INK)
-        self.fit_width(line2)
-        line2.move_to([0, -5.35, 0])
-        self.add_fixed_in_frame_mobjects(line2)
-        self.play(FadeOut(line1, shift=DOWN * 0.06), run_time=0.4)
-        self.play(FadeIn(line2, shift=UP * 0.06), run_time=0.55)
-        self.wait(0.6)
-        self.volume_line = line2
+        # 切开顶部后，三块拼成的整块就是一个 n × (n+1) × (n+½) 的长方体。
+        line = math_text("3S = n(n+1)(n + ½)", 42, INK)
+        self.fit_width(line)
+        line.move_to([0, -5.35, 0])
+        self.add_fixed_in_frame_mobjects(line)
+        self.play(FadeIn(line, shift=UP * 0.08), run_time=0.6)
+        self.wait(max(0.4, tracker.duration - 0.6))
+        self.volume_line = line
 
     def show_final_formula(self, tracker):
         # 积木缩小上移，公式居中
-        self.assembly = VGroup(self.a_piece, self.b_piece, self.c_piece)
-        still_there = [m for m in (self.top_formula, self.top_counts) if m is not None]
+        self.assembly = VGroup(
+            self.a_piece, self.b_piece, self.c_piece, self.top_lower, self.top_upper
+        )
         self.play(
             self.assembly.animate.scale(0.46).move_to([0, 0.5, 3.2]),
             FadeOut(self.volume_line),
             FadeOut(self.dim_group),
-            *[FadeOut(m) for m in still_there],
             FadeOut(self.title),
             run_time=1.2,
         )
-        self.play(
-            *[a for cube in self.top_cubes for a in self.state_anims(cube, 0.0)],
-            run_time=0.4,
-        )
-        self.top_formula = None
         step1 = VGroup(
             math_text("S = n(n+1)(n + ½) ÷ 3", 40, INK),
         )
@@ -752,7 +769,7 @@ class SquareSumScene(ThreeDScene, VoiceoverScene):
 
         final = VGroup(
             math_text("1² + 2² + ⋯ + n² =", 42, INK),
-            self.fraction("n(n+1)(2n+1)", "6", 36, ACCENT),
+            self.fraction("n(n+1)(n + ½)", "3", 34, ACCENT),
         ).arrange(RIGHT, buff=0.2)
         self.fit_width(final, 7.4)
         final.move_to([0, -2.6, 0])

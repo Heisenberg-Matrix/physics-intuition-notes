@@ -295,6 +295,21 @@ def validate_assembly(
         sum(1 for x, y, z in top if x == row) for row in range(n)
     ]
 
+    # 顶层 ½ 厚剖分：把顶层三角棱柱从中间切开，上半绕底面中心转 180°。
+    # 方格中心按 (x, y) -> (n-1-x, n-y) 映射，应恰好补成整块 4×5×½ 扁长方体。
+    footprint = {(x, y) for x in range(n) for y in range(n + 1)}
+    lower_half = {(x, y) for x, y, z in top}
+    upper_half = {((n - 1) - x, n - y) for x, y in lower_half}
+    dissection = {
+        "lower_half_cells": len(lower_half),
+        "upper_half_cells": len(upper_half),
+        "overlap": len(lower_half & upper_half),
+        "footprint": len(footprint),
+        "covers_flat_slab": (lower_half | upper_half) == footprint,
+        "flat_volume": len(footprint) / 2,
+        "matches_top_volume": len(footprint) / 2 == len(top),
+    }
+
     path_checks: dict[str, bool] = {}
     if paths:
         rotated = {
@@ -330,6 +345,7 @@ def validate_assembly(
         "top_row_counts": row_counts,
         "decomposes": union == base | top and not (base & top),
         "equivalent_height": len(union) / (n * (n + 1)),
+        "dissection": dissection,
         "path_checks": path_checks,
     }
     report["ok"] = bool(
@@ -339,6 +355,9 @@ def validate_assembly(
         and union == target
         and all(rigid.values())
         and report["decomposes"]
+        and dissection["covers_flat_slab"]
+        and dissection["overlap"] == 0
+        and dissection["matches_top_volume"]
         and all(path_checks.values())
     )
     return report
