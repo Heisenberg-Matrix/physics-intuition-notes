@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 一键渲染：./run.sh preview 出低清预览，./run.sh 出 1080×1920 成片。
+# 一键渲染：./run.sh preview 出低清预览，./run.sh 出 1080×1920 成片；两者都带中文配音。
 set -e
 cd "$(dirname "$0")"
 
@@ -12,21 +12,36 @@ if [ -z "$PY" ]; then
   fi
 fi
 
+FF="$(command -v ffmpeg || true)"
+if [ -z "$FF" ] && [ -x "../../.venv/Scripts/ffmpeg.exe" ]; then
+  FF="../../.venv/Scripts/ffmpeg.exe"
+fi
+if [ -z "$FF" ]; then
+  echo "找不到 ffmpeg：请安装 FFmpeg 或放到 .venv/Scripts/ffmpeg.exe" >&2
+  exit 1
+fi
+
+# 配音单独缓存；文案或语速不变时不会重新联网合成。
+"$PY" narration.py
+
+mux() {
+  # $1 无声视频，$2 输出文件
+  "$FF" -y -v error -i "$1" -i media/voice/voiceover.wav \
+    -map 0:v:0 -map 1:a:0 -c:v copy \
+    -af loudnorm=I=-16:TP=-1.5:LRA=11 \
+    -c:a aac -b:a 128k -ar 48000 -ac 1 \
+    -movflags +faststart -shortest "$2"
+}
+
 if [ "${1:-}" = "preview" ]; then
   PREVIEW=1 "$PY" -m manim -ql --disable_caching scene.py TrigReductionScene
-  cp media/videos/scene/960p30/TrigReductionScene.mp4 media/preview.mp4
+  mux media/videos/scene/960p30/TrigReductionScene.mp4 media/preview.mp4
   echo "[preview] media/preview.mp4"
 else
   "$PY" -m manim -qh --disable_caching scene.py TrigReductionScene
-  cp media/videos/scene/1920p30/TrigReductionScene.mp4 trig-reduction.mp4
+  mux media/videos/scene/1920p30/TrigReductionScene.mp4 trig-reduction.mp4
   echo "[video] trig-reduction.mp4"
 
-  FF="$(command -v ffmpeg || true)"
-  if [ -z "$FF" ] && [ -x "../../.venv/Scripts/ffmpeg.exe" ]; then
-    FF="../../.venv/Scripts/ffmpeg.exe"
-  fi
-  if [ -n "$FF" ]; then
-    "$FF" -y -ss 53 -i trig-reduction.mp4 -frames:v 1 -q:v 3 poster.jpg
-    echo "[poster] poster.jpg"
-  fi
+  "$FF" -y -v error -ss 53 -i trig-reduction.mp4 -frames:v 1 -q:v 3 poster.jpg
+  echo "[poster] poster.jpg"
 fi

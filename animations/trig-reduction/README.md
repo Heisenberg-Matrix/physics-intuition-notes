@@ -1,6 +1,6 @@
 # 三角函数诱导公式，真的需要背吗？
 
-一条 54 秒的竖屏动画。它不从公式出发，而是把点 P 放到单位圆上：
+一条 54 秒的竖屏动画，配中文配音与字幕。它不从公式出发，而是把点 P 放到单位圆上：
 
 - 逆时针转半圈，看点落到 π+α 时坐标怎么变；
 - 顺时针转到 −α，看点如何关于 x 轴对称；
@@ -14,7 +14,7 @@ sin(kπ − α) = (−1)^(k+1) sin α
 cos(kπ ± α) = (−1)^k cos α        (k ∈ ℤ)
 ```
 
-成片：[trig-reduction.mp4](trig-reduction.mp4)（1080×1920，30 fps，54 秒）。
+成片：[trig-reduction.mp4](trig-reduction.mp4)（1080×1920，30 fps，54 秒，AAC 48 kHz 单声道配音）。
 
 ## 预览
 
@@ -27,32 +27,49 @@ python -m http.server 8123
 
 ## 渲染
 
-依赖：Python 3.10+、Manim CE 0.19.1、NumPy、FFmpeg（Manim 写 MP4 用）。本仓库已在 Manim 0.19.1 + Python 3.10.11 下验证。
+依赖：Python 3.10+、Manim CE 0.19.1、NumPy、edge-tts 7.3.1（配音，需联网）、FFmpeg（写 MP4 与混音）。本仓库已在 Manim 0.19.1 + Python 3.10.11 + edge-tts 7.3.1 下验证。
 
 ```bash
 cd animations/trig-reduction
 pip install -r requirements.txt
 
-./run.sh preview     # 540×960 @30，输出 media/preview.mp4
-./run.sh             # 1080×1920 @30，输出 trig-reduction.mp4 与 poster.jpg
+./run.sh preview     # 540×960 @30，输出 media/preview.mp4（含配音）
+./run.sh             # 1080×1920 @30，输出 trig-reduction.mp4 与 poster.jpg（含配音）
 ```
 
 等价的 Manim 命令：
 
 ```bash
-# 低清预览
+# 低清预览（无声）
 PREVIEW=1 python -m manim -ql --disable_caching scene.py TrigReductionScene
 
 # 成片（Manim 按画面高度命名输出目录，竖屏 1080×1920 是 1920p30）
 python -m manim -qh --disable_caching scene.py TrigReductionScene
-cp media/videos/scene/1920p30/TrigReductionScene.mp4 trig-reduction.mp4
+
+# 配音：逐句合成，命中缓存后不再联网
+python narration.py
+
+# 把音轨混进视频
+ffmpeg -i media/videos/scene/1920p30/TrigReductionScene.mp4 \
+  -i media/voice/voiceover.wav -map 0:v:0 -map 1:a:0 -c:v copy \
+  -af loudnorm=I=-16:TP=-1.5:LRA=11 -c:a aac -b:a 128k -ar 48000 -ac 1 \
+  -movflags +faststart -shortest trig-reduction.mp4
 ```
 
 `--disable_caching` 建议保留：本片大量使用 `always_redraw`，分段缓存不能完整记录 updater 状态，复用旧分段容易出现错帧。
 
+## 配音
+
+- **音色**：`zh-CN-XiaoxiaoNeural`，语速 `+4%`；逐句合成后用 20 ms 淡入淡出拼进 54 秒音轨。
+- **文本来源**：直接读 `scene.py` 的 `CUES`，字幕和语音不会各写一份；课堂上 `cos`、`sin` 分别读作“扣赛因”“赛因”，在 `narration.py` 的 `PRONOUNCE` 里统一替换。
+- **对齐**：`ONSETS` 记录画面中每句字幕实际淡入完成的秒数；语音从该时刻起播，若上一句还没说完就顺延，保证不重叠（本片最多把某句顺延 0.29 秒）。
+- **响度**：混流时 `loudnorm=I=-16:TP=-1.5`，符合短视频平台常见的 −16 LUFS 目标。
+- **缓存**：每句 MP3 按文本哈希缓存在 `media/voice/`，改一句只会重合成那一句；首次合成需联网。
+- **无背景音乐**：只保留人声，避免和关键词字幕抢注意力。
+
 ## 分镜与时间轴
 
-当前版本不合成配音。脚本顶部的 `NARRATION` 保留完整解说词，`CUES` 给出每句字幕的起始时间；后续接 TTS 时按这些时间点对齐即可。字幕固定在画面坐标 `y = −6.55`，避开平台底部按钮区。
+配音由 `narration.py` 按 `CUES` 逐句铺在字幕出现的时刻；`NARRATION` 保留完整解说词作备份。字幕固定在画面坐标 `y = −6.55`，避开平台底部按钮区。
 
 | 时间 | 画面 | 解说 / 字幕 |
 | --- | --- | --- |
@@ -80,26 +97,30 @@ cp media/videos/scene/1920p30/TrigReductionScene.mp4 trig-reduction.mp4
 | `PREVIEW` | 环境变量 | `1` → 540×960@30；否则 1080×1920@30 |
 | `CENTER` / `RADIUS` | `scene.py` | 单位圆圆心 `(0, 1.35)`、半径 2.55；全片位置稳定 |
 | `ALPHA` | `scene.py` | 演示角 40°；改角度会同步影响所有投影和标签 |
-| `CUES` | `scene.py` | 每句字幕的起始时间；接 TTS 时按此对齐 |
-| `NARRATION` | `scene.py` | 完整解说词，当前不合成音频 |
+| `CUES` | `scene.py` | 每句字幕的文本与名义起始时间；配音也读这里 |
+| `NARRATION` | `scene.py` | 完整解说词备份 |
+| `VOICE` / `RATE` | `narration.py` | 音色与语速，默认晓晓 `+4%` |
+| `ONSETS` | `narration.py` | 字幕实际淡入时刻；重跑渲染后按日志更新 |
 | `TEAL` / `ORANGE` / `BLUE` / `ROSE` | `scene.py` | 四种点的语义色 |
 | `SUB_Y` | `scene.py` | 字幕高度 −6.55 |
 | 各段时长 | `SEGMENTS` | 0–6、6–14、14–25、25–36、36–47、47–54 秒 |
 
 ## 验证情况
 
-- **渲染**：Manim 0.19.1 完整渲染 540×960@30 预览与 1080×1920@30 成片，单场景连续渲染，时长 54.00 秒；成片 3.9 MB，无音轨。
+- **渲染**：Manim 0.19.1 完整渲染 540×960@30 预览与 1080×1920@30 成片，单场景连续渲染，时长 54.00 秒；成片约 4.4 MB，视频 1080×1920@30，音轨 AAC 48 kHz 单声道。`./run.sh preview` 已从头跑通一次，确认配音生成与混流链路可用。
 - **数学**：α=40°；π+α=220° 落在第三象限，π−α=140° 落在第二象限，−α=−40° 落在第四象限；三条最终公式均与 `k` 的奇偶一致。
 - **逐帧抽查**：钩子公式可读；0→α 连续扫过；转 π 后横纵坐标同时为负，投影段依次加粗；−α 与 α 共用同一 x；四个点的连线分别为水平、过圆心、竖直；最终画面只剩单位圆、三条公式与“k 为任意整数”，停留约 2 秒。
 - **安全边距**：540×960 下最左/最右内容均留有约 8% 画幅宽度；字幕与公式不重叠，最终停留约 2 秒。
-- **已知限制**：本机无 LaTeX，公式字形为 Cambria Math；Edge TTS 未接入，字幕时间轴已预留在 `CUES`。
+- **配音**：11 句全部落在对应字幕窗口内，句首静音后起声与字幕相差 0.2–0.5 秒；成片实测 −15.9 LUFS、真峰值 −1.5 dBFS；首句约 0.59 秒起声，末句约 51.8 秒收尾，片尾留约 2 秒静默定格。
+- **已知限制**：本机无 LaTeX，公式字形为 Cambria Math；Edge TTS 首次合成需要联网，没有背景音乐。
 
 ## 文件
 
 - `scene.py` — 完整 Manim 场景、时间轴、公式与字幕
-- `run.sh` — 一键预览 / 成片渲染
+- `narration.py` — 逐句 TTS、时间对齐、输出 `media/voice/voiceover.wav`
+- `run.sh` — 一键预览 / 成片渲染，并混入配音
 - `requirements.txt` — Python 依赖
 - `index.html` — 视频预览页
 - `trig-reduction.mp4` — 成片
 - `poster.jpg` — 网页封面
-- `media/` — 渲染缓存与预览（忽略提交）
+- `media/` — 渲染缓存、预览与配音缓存（忽略提交）
