@@ -6,18 +6,20 @@
 
 声音说明
 --------
-当前版本不合成配音，只用画面字幕标记每句解说的位置；
-``NARRATION`` 保留原始解说词，``CUES`` 给出每句的起始时间，
-后续接 TTS 时可以直接按这些时间点对齐。
+``CUES`` 给出每句字幕与配音的起始时间，``NARRATION`` 保留完整解说词；
+``narration.py`` 逐句合成语音，再按实测字幕时刻对齐。
 
 时间轴
 ------
 00.0–06.0  钩子：四个诱导公式，然后提出“真的需要背吗”
-06.0–14.0  建立单位圆，标出 cos α / sin α
-14.0–25.0  逆时针转半圈：π + α，横纵坐标同时变号
-25.0–36.0  顺时针转到 −α：横坐标不变，纵坐标变号
-36.0–47.0  四个点同时在场，逐一比较三种对称关系
-47.0–54.0  规则合并，推广到任意整数 k，停留 2 秒
+06.0–13.0  只讲正弦：单位圆、点 P、纵坐标 +sin α
+13.0–17.0  只讲余弦：横坐标 +cos α
+17.0–25.0  只跟纵坐标：保留 α 处的原投影，逆时针转 π 到 π+α
+25.0–29.5  余弦同理：横坐标由 +cos α 变 −cos α
+29.5–37.3  只跟纵坐标：回到 α，再顺时针转到 −α
+37.3–40.0  余弦同理：−α 与 α 共用横坐标，cos 不变
+40.0–48.5  四个点同时在场，逐一比较三种对称关系
+48.5–57.0  先列正弦公式，再快速补余弦；推广到任意整数 k
 
 渲染
 ----
@@ -95,42 +97,55 @@ SUB_Y = -6.55                          # 字幕基线，留出平台底部安全
 LABEL_RADIUS = RADIUS + 0.62
 
 # 每段的目标起止时间（秒）；用 hold_until 把画面锁在这些节拍上。
+# 先单独讲正弦，再单独讲余弦；转半圈、取负角都以正弦为主，
+# 余弦在每段后面用一小段“同理”快速带过。
 SEGMENTS = {
     "hook": (0.0, 6.0),
-    "circle": (6.0, 14.0),
-    "half_turn": (14.0, 25.0),
-    "negative": (25.0, 36.0),
-    "combine": (36.0, 47.0),
-    "reveal": (47.0, 54.0),
+    "sin_intro": (6.0, 13.0),
+    "cos_intro": (13.0, 17.0),
+    "half_sin": (17.0, 25.0),
+    "half_cos": (25.0, 29.5),
+    "neg_sin": (29.5, 37.3),
+    "neg_cos": (37.3, 40.0),
+    "combine": (40.0, 48.5),
+    "reveal": (48.5, 57.0),
 }
 TOTAL = SEGMENTS["reveal"][1]
 
-# 原始解说词：当前只作为注释/字幕使用，方便以后接 TTS。
+# 原始解说词：与 CUES 保持一致，配音直接读 CUES。
 NARRATION = {
-    "hook1": "这些三角函数公式，你还记得几个？",
+    "hook1": "这些诱导公式，你还记得几个？",
     "hook2": "有没有可能……根本不用背？",
-    "circle": "其实，我们只需要一个圆。横坐标是 cos，纵坐标是 sin。",
+    "sin1": "先把点放在单位圆上。",
+    "sin2": "点的纵坐标，就是正弦。",
+    "cos1": "横坐标，就是余弦。",
     "half_q": "如果再转半圈呢？",
-    "half_a": "转过半圈，横坐标和纵坐标，竟然都反了。",
-    "neg_q": "那如果角度变成负数呢？",
-    "neg_a": "这一次，横坐标不变，只有纵坐标反了。",
-    "combine": "转半圈，再改变角度的正负方向……所有规律，都藏在这个圆里。",
-    "reveal": "原来，诱导公式不用硬背。转一转，就看懂了。",
+    "half_sin": "转半圈，纵坐标由正变负。",
+    "half_cos": "余弦也一样。",
+    "neg_q": "那角度变成负数呢？",
+    "neg_sin": "纵坐标变号，正弦也变号。",
+    "neg_cos": "横坐标不变，余弦也不变。",
+    "combine1": "四个点，其实只差一个符号。",
+    "reveal1": "所以，诱导公式不用背。",
+    "reveal2": "转一转，就看懂了。",
 }
 
 # 字幕与起始时间；长句在 subtitle_text 里自动缩到安全宽度。
 CUES: dict[str, tuple[float, str]] = {
-    "hook1": (0.20, "这些三角函数公式，你还记得几个？"),
-    "hook2": (3.60, "有没有可能……根本不用背？"),
-    "circle": (6.05, "其实，我们只需要一个圆。"),
-    "circle_coords": (9.00, "横坐标是 cos，纵坐标是 sin。"),
-    "half_q": (14.10, "如果再转半圈呢？"),
-    "half_a": (18.50, "转过半圈，横坐标和纵坐标，竟然都反了。"),
-    "neg_q": (26.30, "那如果角度变成负数呢？"),
-    "neg_a": (29.80, "这一次，横坐标不变，只有纵坐标反了。"),
-    "combine1": (36.20, "转半圈，再改变角度的正负方向……"),
-    "combine2": (41.00, "所有规律，都藏在这个圆里。"),
-    "reveal": (47.20, "原来，诱导公式不用硬背。转一转，就看懂了。"),
+    "hook1": (0.20, "这些诱导公式，你还记得几个？"),
+    "hook2": (3.70, "有没有可能……根本不用背？"),
+    "sin1": (6.20, "先把点放在单位圆上。"),
+    "sin2": (8.90, "点的纵坐标，就是正弦。"),
+    "cos1": (13.20, "横坐标，就是余弦。"),
+    "half_q": (17.20, "如果再转半圈呢？"),
+    "half_sin": (22.30, "转半圈，纵坐标由正变负。"),
+    "half_cos": (25.60, "余弦也一样。"),
+    "neg_q": (29.60, "那角度变成负数呢？"),
+    "neg_sin": (34.30, "纵坐标变号，正弦也变号。"),
+    "neg_cos": (37.30, "横坐标不变，余弦也不变。"),
+    "combine1": (40.20, "四个点，其实只差一个符号。"),
+    "reveal1": (49.00, "所以，诱导公式不用背。"),
+    "reveal2": (53.00, "转一转，就看懂了。"),
 }
 
 
@@ -203,9 +218,12 @@ class TrigReductionScene(Scene):
         self.subtitle: Text | None = None
 
         self.hook_phase()
-        self.circle_phase()
-        self.half_turn_phase()
-        self.negative_phase()
+        self.sin_intro_phase()
+        self.cos_intro_phase()
+        self.half_sin_phase()
+        self.half_cos_phase()
+        self.neg_sin_phase()
+        self.neg_cos_phase()
         self.combine_phase()
         self.reveal_phase()
 
@@ -254,7 +272,11 @@ class TrigReductionScene(Scene):
         return point_on_circle(tracker.get_value())
 
     def build_live_objects(self) -> None:
-        """半径、动点、坐标投影和坐标轴上的高亮段，全部绑定 tracker。"""
+        """半径、动点、正弦/余弦两层投影，全部绑定 tracker。
+
+        两层各自有透明度：`sin_a` 管纵坐标投影，`cos_a` 管横坐标投影，
+        这样同一时刻只突出一个三角函数，不把两条线堆在一张图里。
+        """
         c = CENTER
 
         def radius():
@@ -263,79 +285,117 @@ class TrigReductionScene(Scene):
         def dot():
             return Dot(self.point(), radius=0.095, color=self.live_color())
 
-        def proj_opacity() -> float:
-            return 0.62 * self.proj_alpha.get_value()
-
         # 投影用细实线：always_redraw 每帧重建 DashedLine 时虚线数量会变化，
         # Manim 的 become/align_points 在子路径数不一致时会越界，因此用实线。
-        def x_proj():
-            p = self.point()
-            return Line(
-                p,
-                [p[0], c[1], 0],
-                color=self.live_color(),
-                stroke_width=1.8,
-                stroke_opacity=proj_opacity(),
-            )
-
-        def y_proj():
+        def sin_conn():
             p = self.point()
             return Line(
                 p,
                 [c[0], p[1], 0],
                 color=self.live_color(),
                 stroke_width=1.8,
-                stroke_opacity=proj_opacity(),
+                stroke_opacity=0.62 * self.sin_a.get_value(),
             )
 
-        def x_bar():
-            p = self.point()
-            return Line(
-                c,
-                [p[0], c[1], 0],
-                color=self.live_color(),
-                stroke_width=4.0,
-                stroke_opacity=0.55 * self.proj_alpha.get_value(),
-            )
-
-        def y_bar():
+        def sin_bar():
             p = self.point()
             return Line(
                 c,
                 [c[0], p[1], 0],
                 color=self.live_color(),
                 stroke_width=4.0,
-                stroke_opacity=0.55 * self.proj_alpha.get_value(),
+                stroke_opacity=0.55 * self.sin_a.get_value(),
             )
 
-        def hl_x():
-            p = self.point()
-            return Line(
-                c,
-                [p[0], c[1], 0],
-                color=self.live_color(),
-                stroke_width=8.0,
-                stroke_opacity=0.55 * self.hlx.get_value(),
-            )
-
-        def hl_y():
+        def sin_hl():
             p = self.point()
             return Line(
                 c,
                 [c[0], p[1], 0],
                 color=self.live_color(),
                 stroke_width=8.0,
-                stroke_opacity=0.55 * self.hly.get_value(),
+                stroke_opacity=0.55 * self.hl_sin.get_value(),
+            )
+
+        def cos_conn():
+            p = self.point()
+            return Line(
+                p,
+                [p[0], c[1], 0],
+                color=self.live_color(),
+                stroke_width=1.8,
+                stroke_opacity=0.62 * self.cos_a.get_value(),
+            )
+
+        def cos_bar():
+            p = self.point()
+            return Line(
+                c,
+                [p[0], c[1], 0],
+                color=self.live_color(),
+                stroke_width=4.0,
+                stroke_opacity=0.55 * self.cos_a.get_value(),
+            )
+
+        def cos_hl():
+            p = self.point()
+            return Line(
+                c,
+                [p[0], c[1], 0],
+                color=self.live_color(),
+                stroke_width=8.0,
+                stroke_opacity=0.55 * self.hl_cos.get_value(),
             )
 
         self.radius = always_redraw(radius)
         self.dot = always_redraw(dot)
-        self.x_proj = always_redraw(x_proj)
-        self.y_proj = always_redraw(y_proj)
-        self.x_bar = always_redraw(x_bar)
-        self.y_bar = always_redraw(y_bar)
-        self.hl_x_line = always_redraw(hl_x)
-        self.hl_y_line = always_redraw(hl_y)
+        self.sin_conn_live = always_redraw(sin_conn)
+        self.sin_bar_live = always_redraw(sin_bar)
+        self.sin_hl_live = always_redraw(sin_hl)
+        self.cos_conn_live = always_redraw(cos_conn)
+        self.cos_bar_live = always_redraw(cos_bar)
+        self.cos_hl_live = always_redraw(cos_hl)
+
+    # -------------------------------------------------------------- 坐标工具
+    def axis_foot(self, kind: str, p: np.ndarray) -> np.ndarray:
+        if kind == "sin":
+            return np.array([CENTER[0], p[1], 0.0])
+        return np.array([p[0], CENTER[1], 0.0])
+
+    def coord_label_pos(self, kind: str, p: np.ndarray) -> np.ndarray:
+        """把 +sin α / −cos α 这类标签放在对应坐标条旁边。"""
+        if kind == "sin":
+            # 标签放在半径的另一侧，避免和斜着的半径重叠。
+            side = 1.0 if p[0] < CENTER[0] else -1.0
+            return np.array(
+                [CENTER[0] + side * 0.88, (CENTER[1] + p[1]) / 2, 0.0]
+            )
+        return np.array([(CENTER[0] + p[0]) / 2, CENTER[1] - 0.46, 0.0])
+
+    def coord_label(self, kind: str, text: str, color: str, angle: float):
+        p = point_on_circle(angle)
+        return math_text(text, None, 30, color).move_to(self.coord_label_pos(kind, p))
+
+    def ghost_projection(self, kind: str, angle: float, color: str, text: str):
+        """保留原角度的浅色投影 + 带正负号的标签，用来和新位置对照。"""
+        p = point_on_circle(angle)
+        foot = self.axis_foot(kind, p)
+        conn = Line(
+            p,
+            foot,
+            color=color,
+            stroke_width=1.8,
+            stroke_opacity=0.40,
+        )
+        bar = Line(
+            CENTER,
+            foot,
+            color=color,
+            stroke_width=3.2,
+            stroke_opacity=0.28,
+        )
+        label = self.coord_label(kind, text, color, angle).set_opacity(0.72)
+        return VGroup(conn, bar, label)
 
     def fade_live(self, mobjects, run_time: float = 0.4) -> None:
         """always_redraw 对象先停掉 updater，再淡出，否则透明度会被刷新。"""
@@ -385,11 +445,11 @@ class TrigReductionScene(Scene):
         self.hold_until(5.55)
         self.play(FadeOut(question, run_time=0.35))
 
-    # -------------------------------------------------------------- 02 单位圆
-    def circle_phase(self) -> None:
-        """06–14 s：缓缓画出单位圆；半径从 0° 转到 α，再出现坐标投影。"""
-        self.cue("circle")
-        self.hold_until(6.35)
+    # -------------------------------------------------------------- 02 正弦
+    def sin_intro_phase(self) -> None:
+        """06–13 s：只讲正弦——点的纵坐标。"""
+        self.cue("sin1")
+        self.hold_until(6.30)
 
         self.circle = Circle(radius=RADIUS, color=INK, stroke_width=2.2)
         self.circle.move_to(CENTER)
@@ -411,15 +471,25 @@ class TrigReductionScene(Scene):
         )
         self.axes = VGroup(x_axis, y_axis)
 
-        self.play(Create(self.circle), Create(self.axes), run_time=1.20)
+        self.play(Create(self.circle), Create(self.axes), run_time=1.10)
 
         self.angle = ValueTracker(0.0)
         self.hue = ValueTracker(0.0)
-        self.proj_alpha = ValueTracker(0.0)
-        self.hlx = ValueTracker(0.0)
-        self.hly = ValueTracker(0.0)
+        self.sin_a = ValueTracker(0.0)
+        self.cos_a = ValueTracker(0.0)
+        self.hl_sin = ValueTracker(0.0)
+        self.hl_cos = ValueTracker(0.0)
         self.build_live_objects()
-        self.add(self.radius, self.dot)
+        self.add(
+            self.radius,
+            self.dot,
+            self.sin_conn_live,
+            self.sin_bar_live,
+            self.sin_hl_live,
+            self.cos_conn_live,
+            self.cos_bar_live,
+            self.cos_hl_live,
+        )
 
         # 半径从 0 扫到 α；这是连续旋转，不是换点。
         self.play(
@@ -428,52 +498,73 @@ class TrigReductionScene(Scene):
             rate_func=smooth,
         )
 
-        self.cue("circle_coords")
-        self.add(
-            self.x_proj,
-            self.y_proj,
-            self.x_bar,
-            self.y_bar,
-            self.hl_x_line,
-            self.hl_y_line,
-        )
-        self.play(self.proj_alpha.animate.set_value(1.0), run_time=0.45)
+        self.cue("sin2")
+        self.play(self.sin_a.animate.set_value(1.0), run_time=0.45)
 
         p = self.point()
-        cos_label = math_text("<i>cos</i> α", r"\cos\alpha", 30, TEAL)
-        cos_label.move_to([p[0], CENTER[1] - 0.46, 0])
-        sin_label = math_text("<i>sin</i> α", r"\sin\alpha", 30, TEAL)
-        sin_label.next_to([CENTER[0], p[1], 0], LEFT, buff=0.18)
-        p_label = math_text("P", "P", 28, TEAL)
-        p_label.next_to(p, UR, buff=0.10)
+        self.sin_intro_label = self.coord_label(
+            "sin", "+<i>sin</i> α", TEAL, ALPHA
+        )
+        self.p_label = math_text("P", "P", 28, TEAL).next_to(p, UL, buff=0.10)
+        self.alpha_label = math_text("α", r"\alpha", 30, TEAL).move_to(
+            label_position(ALPHA)
+        )
+        self.play(FadeIn(self.sin_intro_label, shift=LEFT * 0.05), run_time=0.25)
+        self.play(FadeIn(self.p_label), FadeIn(self.alpha_label), run_time=0.25)
 
-        self.play(FadeIn(cos_label, shift=DOWN * 0.05), run_time=0.25)
-        self.play(FadeIn(sin_label, shift=LEFT * 0.05), run_time=0.25)
-        self.play(FadeIn(p_label), run_time=0.20)
-        self.hold_until(10.80)
-        self.play(Indicate(cos_label, color=TEAL, scale_factor=1.10), run_time=0.55)
-        self.hold_until(11.70)
-        self.play(Indicate(sin_label, color=TEAL, scale_factor=1.10), run_time=0.55)
+        self.hold_until(10.70)
+        self.play(
+            Indicate(self.sin_intro_label, color=TEAL, scale_factor=1.10),
+            run_time=0.55,
+        )
+        self.hold_until(12.85)
 
-        self.labels_unit = VGroup(cos_label, sin_label, p_label)
-        self.hold_until(13.55)
-        self.play(FadeOut(self.labels_unit), run_time=0.35)
+    # -------------------------------------------------------------- 03 余弦
+    def cos_intro_phase(self) -> None:
+        """13–17 s：把正弦收回，只讲余弦——点的横坐标。"""
+        self.cue("cos1")
+        self.hold_until(13.10)
+        self.play(
+            self.sin_a.animate.set_value(0.0),
+            FadeOut(self.sin_intro_label),
+            run_time=0.35,
+        )
+        self.play(self.cos_a.animate.set_value(1.0), run_time=0.45)
 
-    # -------------------------------------------------------------- 03 转半圈
-    def half_turn_phase(self) -> None:
-        """14–25 s：从 α 连续逆时针转 π 到 π+α，两坐标同时变号。"""
+        self.cos_intro_label = self.coord_label(
+            "cos", "+<i>cos</i> α", TEAL, ALPHA
+        )
+        self.play(FadeIn(self.cos_intro_label, shift=DOWN * 0.05), run_time=0.25)
+
+        self.hold_until(15.10)
+        self.play(
+            Indicate(self.cos_intro_label, color=TEAL, scale_factor=1.10),
+            run_time=0.55,
+        )
+        self.play(FadeOut(self.p_label), run_time=0.25)
+        self.hold_until(16.85)
+
+    # -------------------------------------------------------------- 04 转半圈 · 正弦
+    def half_sin_phase(self) -> None:
+        """17–25 s：只跟纵坐标，连续逆时针转 π，正变负。"""
         self.cue("half_q")
-        self.hold_until(15.00)
+        self.hold_until(17.45)
 
-        # 原位置留一个浅色对照点。
+        # 余弦退场，只留正弦。
+        self.play(
+            self.cos_a.animate.set_value(0.0),
+            FadeOut(self.cos_intro_label),
+            run_time=0.35,
+        )
+        self.play(self.sin_a.animate.set_value(1.0), run_time=0.30)
+
+        # 原角度保留：对照点 + α + 浅色投影 + “+sin α”。
         self.ghost = Dot(
             self.point(), radius=0.075, color=TEAL, fill_opacity=0.35, stroke_width=0
         )
-        self.ghost_label = math_text("α", r"\alpha", 30, TEAL).move_to(
-            label_position(ALPHA)
-        )
-        self.ghost_label.set_opacity(0.55)
-        self.play(FadeIn(self.ghost), FadeIn(self.ghost_label), run_time=0.28)
+        self.ghost_sin = self.ghost_projection("sin", ALPHA, TEAL, "+<i>sin</i> α")
+        self.alpha_label.set_opacity(0.75)
+        self.play(FadeIn(self.ghost), FadeIn(self.ghost_sin), run_time=0.35)
 
         arc = Arc(
             radius=RADIUS,
@@ -491,61 +582,98 @@ class TrigReductionScene(Scene):
             rate_func=smooth,
         )
         self.play(self.hue.animate.set_value(1.0), run_time=0.30)
+        self.play(self.hl_sin.animate.set_value(1.0), run_time=0.30)
 
-        self.cue("half_a")
+        self.neg_sin_label = self.coord_label(
+            "sin", "−<i>sin</i> α", ROSE, ALPHA + PI
+        )
+        self.live_angle_label = math_text(
+            "<i>π</i> + α", r"\pi+\alpha", 30, ROSE
+        ).move_to(label_position(ALPHA + PI))
+        self.play(
+            FadeIn(self.neg_sin_label),
+            FadeIn(self.live_angle_label),
+            run_time=0.30,
+        )
 
-        # 先横坐标，再纵坐标，一次只强调一条。
-        self.play(self.hlx.animate.set_value(1.0), run_time=0.35)
-        cos_formula = math_text(
-            "<i>cos</i>(π + α) = −<i>cos</i> α",
-            r"\cos(\pi+\alpha)=-\cos\alpha",
-            36,
-            INK,
-        ).move_to([0, -2.35, 0])
-        self.play(FadeIn(cos_formula, shift=UP * 0.08), run_time=0.40)
-
-        self.hold_until(20.10)
-        self.play(self.hly.animate.set_value(1.0), run_time=0.35)
-        sin_formula = math_text(
+        self.cue("half_sin")
+        self.sin_formula = math_text(
             "<i>sin</i>(π + α) = −<i>sin</i> α",
             r"\sin(\pi+\alpha)=-\sin\alpha",
             36,
             INK,
-        ).move_to([0, -3.25, 0])
-        self.play(FadeIn(sin_formula, shift=UP * 0.08), run_time=0.40)
-        self.half_formulas = VGroup(cos_formula, sin_formula)
+        ).move_to([0, -2.45, 0])
+        self.play(FadeIn(self.sin_formula, shift=UP * 0.08), run_time=0.40)
 
-        self.hold_until(21.75)
+        self.hold_until(23.15)
         self.play(
-            Indicate(cos_formula, color=ROSE, scale_factor=1.04), run_time=0.55
+            Indicate(self.sin_formula, color=ROSE, scale_factor=1.04),
+            run_time=0.55,
         )
-        self.hold_until(22.65)
-        self.play(
-            Indicate(sin_formula, color=ROSE, scale_factor=1.04), run_time=0.55
-        )
+        self.hold_until(24.80)
+        self.play(FadeOut(arc), run_time=0.20)
 
-        self.hold_until(24.45)
-        self.play(
-            FadeOut(self.half_formulas),
-            self.hlx.animate.set_value(0.0),
-            self.hly.animate.set_value(0.0),
-            FadeOut(arc),
-            run_time=0.45,
-        )
+    # -------------------------------------------------------------- 05 转半圈 · 余弦
+    def half_cos_phase(self) -> None:
+        """25–29 s：余弦同理，快速看横坐标由正变负。"""
+        self.cue("half_cos")
+        self.hold_until(25.85)
 
-    # -------------------------------------------------------------- 04 负角
-    def negative_phase(self) -> None:
-        """25–36 s：顺时针转到 −α，强调关于 x 轴的镜像。"""
-        self.hold_until(25.00)
+        self.play(
+            self.sin_a.animate.set_value(0.0),
+            FadeOut(self.neg_sin_label),
+            FadeOut(self.sin_formula),
+            FadeOut(self.ghost_sin),
+            run_time=0.30,
+        )
+        self.play(self.hl_sin.animate.set_value(0.0), run_time=0.15)
+        self.play(self.cos_a.animate.set_value(1.0), run_time=0.30)
+
+        self.ghost_cos = self.ghost_projection("cos", ALPHA, TEAL, "+<i>cos</i> α")
+        self.neg_cos_label = self.coord_label(
+            "cos", "−<i>cos</i> α", ROSE, ALPHA + PI
+        )
+        self.play(
+            FadeIn(self.ghost_cos),
+            FadeIn(self.neg_cos_label),
+            run_time=0.30,
+        )
+        self.play(self.hl_cos.animate.set_value(1.0), run_time=0.25)
+
+        self.cos_formula_1 = math_text(
+            "<i>cos</i>(π + α) = −<i>cos</i> α",
+            r"\cos(\pi+\alpha)=-\cos\alpha",
+            36,
+            INK,
+        ).move_to([0, -2.45, 0])
+        self.play(FadeIn(self.cos_formula_1, shift=UP * 0.08), run_time=0.35)
+        self.hold_until(28.70)
+
+    # -------------------------------------------------------------- 06 负角 · 正弦
+    def neg_sin_phase(self) -> None:
+        """29–36 s：顺时针转到 −α，只跟纵坐标。"""
+        self.cue("neg_q")
+        self.hold_until(29.45)
+
+        self.play(
+            self.cos_a.animate.set_value(0.0),
+            FadeOut(self.neg_cos_label),
+            FadeOut(self.cos_formula_1),
+            FadeOut(self.ghost_cos),
+            FadeOut(self.live_angle_label),
+            run_time=0.30,
+        )
+        self.play(self.hl_cos.animate.set_value(0.0), run_time=0.15)
         self.play(
             self.angle.animate.set_value(ALPHA),
             self.hue.animate.set_value(0.0),
-            run_time=1.05,
+            run_time=1.00,
             rate_func=smooth,
         )
+        self.play(self.sin_a.animate.set_value(1.0), run_time=0.25)
 
-        self.cue("neg_q")
-        self.hold_until(27.00)
+        self.ghost_sin = self.ghost_projection("sin", ALPHA, TEAL, "+<i>sin</i> α")
+        self.play(FadeIn(self.ghost_sin), run_time=0.30)
 
         arc = Arc(
             radius=RADIUS,
@@ -559,21 +687,22 @@ class TrigReductionScene(Scene):
         self.play(
             Create(arc),
             self.angle.animate.set_value(-ALPHA),
-            run_time=2.35,
+            run_time=2.30,
             rate_func=smooth,
         )
+        # 点刚落到 −α，就先给出结论，让语音和画面同步。
+        self.cue("neg_sin")
         self.play(self.hue.animate.set_value(-1.0), run_time=0.30)
+        self.play(self.hl_sin.animate.set_value(1.0), run_time=0.25)
 
-        neg_label = math_text("−α", r"-\alpha", 30, ORANGE).move_to(
+        self.neg_sin_label = self.coord_label(
+            "sin", "−<i>sin</i> α", ORANGE, -ALPHA
+        )
+        self.live_angle_label = math_text("−α", r"-\alpha", 30, ORANGE).move_to(
             label_position(-ALPHA)
         )
-        self.play(FadeIn(neg_label), run_time=0.25)
-
-        self.cue("neg_a")
-
-        # 同一个 x：两点由一条竖直虚线连起来。
-        connector = DashedLine(
-            self.point(),
+        self.connector = DashedLine(
+            point_on_circle(-ALPHA),
             point_on_circle(ALPHA),
             dash_length=0.09,
             dashed_ratio=0.55,
@@ -581,69 +710,101 @@ class TrigReductionScene(Scene):
             stroke_width=2.0,
             stroke_opacity=0.65,
         )
-        self.play(FadeIn(connector), run_time=0.25)
+        self.play(
+            FadeIn(self.neg_sin_label),
+            FadeIn(self.live_angle_label),
+            FadeIn(self.connector),
+            run_time=0.30,
+        )
 
-        self.play(self.hlx.animate.set_value(1.0), run_time=0.35)
-        cos_formula = math_text(
-            "<i>cos</i>(−α) = <i>cos</i> α",
-            r"\cos(-\alpha)=\cos\alpha",
-            36,
-            INK,
-        ).move_to([0, -2.35, 0])
-        self.play(FadeIn(cos_formula, shift=UP * 0.08), run_time=0.40)
-
-        self.hold_until(31.40)
-        self.play(self.hly.animate.set_value(1.0), run_time=0.35)
-        sin_formula = math_text(
+        self.sin_formula = math_text(
             "<i>sin</i>(−α) = −<i>sin</i> α",
             r"\sin(-\alpha)=-\sin\alpha",
             36,
             INK,
-        ).move_to([0, -3.25, 0])
-        self.play(FadeIn(sin_formula, shift=UP * 0.08), run_time=0.40)
-        self.neg_formulas = VGroup(cos_formula, sin_formula)
+        ).move_to([0, -2.45, 0])
+        self.play(FadeIn(self.sin_formula, shift=UP * 0.08), run_time=0.40)
 
-        self.hold_until(33.10)
+        self.hold_until(36.00)
         self.play(
-            Indicate(cos_formula, color=ORANGE, scale_factor=1.04), run_time=0.55
+            Indicate(self.sin_formula, color=ORANGE, scale_factor=1.04),
+            run_time=0.55,
         )
-        self.hold_until(34.00)
+        self.hold_until(36.85)
+        self.play(FadeOut(arc), run_time=0.20)
+
+    # -------------------------------------------------------------- 07 负角 · 余弦
+    def neg_cos_phase(self) -> None:
+        """36–39.5 s：横坐标没变，余弦也不变。"""
+        self.cue("neg_cos")
+        self.hold_until(36.45)
+
         self.play(
-            Indicate(sin_formula, color=ORANGE, scale_factor=1.04), run_time=0.55
+            self.sin_a.animate.set_value(0.0),
+            FadeOut(self.neg_sin_label),
+            FadeOut(self.sin_formula),
+            FadeOut(self.ghost_sin),
+            FadeOut(self.live_angle_label),
+            run_time=0.30,
+        )
+        self.play(self.hl_sin.animate.set_value(0.0), run_time=0.15)
+        self.play(self.cos_a.animate.set_value(1.0), run_time=0.30)
+
+        # α 与 −α 共用同一个横坐标；原位置保留 +cos α 作对照。
+        # 两个标签数值相同，会落在同一点，把一个移到坐标轴上方分开。
+        self.ghost_cos = self.ghost_projection("cos", ALPHA, TEAL, "+<i>cos</i> α")
+        self.ghost_cos[2].move_to(
+            [CENTER[0] + 0.98, CENTER[1] + 0.46, 0.0]
+        )
+        self.pos_cos_label = self.coord_label(
+            "cos", "+<i>cos</i> α", ORANGE, -ALPHA
+        )
+        self.play(
+            FadeIn(self.ghost_cos),
+            FadeIn(self.pos_cos_label),
+            run_time=0.30,
+        )
+        self.play(self.hl_cos.animate.set_value(1.0), run_time=0.25)
+
+        self.cos_formula_2 = math_text(
+            "<i>cos</i>(−α) = <i>cos</i> α",
+            r"\cos(-\alpha)=\cos\alpha",
+            36,
+            INK,
+        ).move_to([0, -2.45, 0])
+        self.play(FadeIn(self.cos_formula_2, shift=UP * 0.08), run_time=0.35)
+        self.hold_until(39.55)
+        self.play(
+            FadeOut(self.connector),
+            FadeOut(self.cos_formula_2),
+            FadeOut(self.pos_cos_label),
+            FadeOut(self.ghost_cos),
+            run_time=0.25,
         )
 
-        self.hold_until(35.25)
-        self.play(
-            FadeOut(self.neg_formulas),
-            FadeOut(connector),
-            FadeOut(neg_label),
-            FadeOut(arc),
-            self.hlx.animate.set_value(0.0),
-            self.hly.animate.set_value(0.0),
-            run_time=0.50,
-        )
-
-    # -------------------------------------------------------------- 05 合并
+    # -------------------------------------------------------------- 08 合并
     def combine_phase(self) -> None:
-        """36–47 s：四个点同时在圆上，逐一比较三种对称。"""
+        """40–48.5 s：四个点同时在圆上，逐一比较三种对称。"""
         self.cue("combine1")
         self.play(
             self.angle.animate.set_value(ALPHA),
             self.hue.animate.set_value(0.0),
-            run_time=0.80,
+            run_time=0.70,
             rate_func=smooth,
         )
-        self.play(FadeOut(self.ghost), FadeOut(self.ghost_label), run_time=0.25)
+        self.play(FadeOut(self.ghost), run_time=0.20)
 
         # 让 live 的投影退场，画面只留四条半径和四个点。
-        self.play(self.proj_alpha.animate.set_value(0.0), run_time=0.30)
-
-        self.static_group = VGroup()
-        self.alpha_label = math_text("α", r"\alpha", 30, TEAL).move_to(
-            label_position(ALPHA)
+        self.play(
+            self.sin_a.animate.set_value(0.0),
+            self.cos_a.animate.set_value(0.0),
+            self.hl_sin.animate.set_value(0.0),
+            self.hl_cos.animate.set_value(0.0),
+            run_time=0.25,
         )
-        self.static_group.add(self.alpha_label)
-        self.play(FadeIn(self.alpha_label), run_time=0.25)
+
+        self.alpha_label.set_opacity(1.0)
+        self.static_group = VGroup(self.alpha_label)
 
         # 对径点 π+α：探针从 α 逆时针扫 π。
         self.sweep_to(
@@ -651,7 +812,7 @@ class TrigReductionScene(Scene):
             ROSE,
             "<i>π</i> + α",
             r"\pi+\alpha",
-            run_time=1.30,
+            run_time=1.15,
         )
         # 关于纵轴的镜像点 π−α：探针从 α 逆时针扫到 140°。
         self.sweep_to(
@@ -659,7 +820,7 @@ class TrigReductionScene(Scene):
             BLUE,
             "<i>π</i> − α",
             r"\pi-\alpha",
-            run_time=1.10,
+            run_time=0.95,
         )
         # 负角点 −α：前面已经完整走过，这里直接让点留场。
         neg_radius, neg_dot = self.make_static_point(-ALPHA, ORANGE)
@@ -668,8 +829,6 @@ class TrigReductionScene(Scene):
         )
         self.static_group.add(neg_radius, neg_dot, neg_label)
         self.play(FadeIn(neg_radius), FadeIn(neg_dot), FadeIn(neg_label), run_time=0.30)
-
-        self.cue("combine2")
 
         # 关系一：π−α 与 α——纵坐标相同，横坐标相反。
         self.show_relation(
@@ -695,7 +854,7 @@ class TrigReductionScene(Scene):
             "−α 与 α：横坐标相同，纵坐标变号",
         )
 
-        self.hold_until(46.20)
+        self.hold_until(48.10)
         self.fade_live([self.radius, self.dot], run_time=0.35)
         self.play(FadeOut(self.static_group), run_time=0.35)
 
@@ -786,68 +945,73 @@ class TrigReductionScene(Scene):
             FadeIn(note, shift=UP * 0.06),
             run_time=0.35,
         )
-        self.hold_until(self.renderer.time + 0.95)
+        self.hold_until(self.renderer.time + 0.60)
         self.play(
             FadeOut(connector),
             FadeOut(ring1),
             FadeOut(ring2),
             FadeOut(note),
-            run_time=0.20,
+            run_time=0.18,
         )
 
-    # -------------------------------------------------------------- 06 揭晓
+    # -------------------------------------------------------------- 09 揭晓
     def reveal_phase(self) -> None:
-        """47–54 s：合并规律，推广到任意整数 k，最后停留 2 秒。"""
-        self.cue("reveal")
-        self.hold_until(47.80)
+        """48.5–57 s：合并规律，推广到任意整数 k；余弦公式快速带过。"""
+        self.cue("reveal1")
+        self.hold_until(48.70)
 
         rows = VGroup(
             self.rule_row("半圈数为偶数：坐标不变", TEAL),
             self.rule_row("半圈数为奇数：坐标都变号", ROSE),
-            self.rule_row("角度取负：sin 变号，cos 不变", ORANGE),
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.38)
-        rows.move_to([0, -2.55, 0])
+            self.rule_row("角度取负：正弦变号，余弦不变", ORANGE),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.34)
+        rows.move_to([0, -2.75, 0])
         note = cn("k 为任意整数：每转半圈，再变一次号", 24, INK_SOFT)
-        note.next_to(rows, DOWN, buff=0.42)
+        note.next_to(rows, DOWN, buff=0.34)
         rules = VGroup(rows, note)
 
         self.play(
             LaggedStart(*[FadeIn(r, shift=UP * 0.06) for r in rows], lag_ratio=0.25),
             FadeIn(note),
-            run_time=0.90,
+            run_time=0.85,
         )
 
-        self.hold_until(50.20)
+        self.hold_until(51.55)
         self.play(FadeOut(rules), run_time=0.30)
 
-        formulas = VGroup(
-            math_text(
-                "<i>sin</i>(<i>k</i>π + α) = (−1)ᵏ <i>sin</i> α",
-                r"\sin(k\pi+\alpha)=(-1)^k\sin\alpha",
-                36,
-                INK,
-            ),
-            math_text(
-                "<i>sin</i>(<i>k</i>π − α) = (−1)ᵏ⁺¹ <i>sin</i> α",
-                r"\sin(k\pi-\alpha)=(-1)^{k+1}\sin\alpha",
-                36,
-                INK,
-            ),
-            math_text(
-                "<i>cos</i>(<i>k</i>π ± α) = (−1)ᵏ <i>cos</i> α",
-                r"\cos(k\pi\pm\alpha)=(-1)^k\cos\alpha",
-                36,
-                INK,
-            ),
-        ).arrange(DOWN, buff=0.32)
-        formulas.move_to([0, -3.05, 0])
-        final_note = cn("k 为任意整数", 24, INK_SOFT).next_to(formulas, DOWN, buff=0.38)
+        # 先完整给出两条正弦公式。
+        sin_row_1 = math_text(
+            "<i>sin</i>(<i>k</i>π + α) = (−1)ᵏ <i>sin</i> α",
+            r"\sin(k\pi+\alpha)=(-1)^k\sin\alpha",
+            36,
+            INK,
+        ).move_to([0, -2.55, 0])
+        sin_row_2 = math_text(
+            "<i>sin</i>(<i>k</i>π − α) = (−1)ᵏ⁺¹ <i>sin</i> α",
+            r"\sin(k\pi-\alpha)=(-1)^{k+1}\sin\alpha",
+            36,
+            INK,
+        ).move_to([0, -3.30, 0])
+        self.play(FadeIn(sin_row_1, shift=UP * 0.06), run_time=0.34)
+        self.play(FadeIn(sin_row_2, shift=UP * 0.06), run_time=0.34)
 
-        for f in formulas:
-            self.play(FadeIn(f, shift=UP * 0.06), run_time=0.34)
-        self.play(FadeIn(final_note), run_time=0.25)
+        # 余弦只快速补一条，标出“同理”。
+        cos_row = math_text(
+            "<i>cos</i>(<i>k</i>π ± α) = (−1)ᵏ <i>cos</i> α",
+            r"\cos(k\pi\pm\alpha)=(-1)^k\cos\alpha",
+            36,
+            INK,
+        ).move_to([0, -4.05, 0])
+        tail_note = cn("余弦同理 · k 为任意整数", 24, INK_SOFT)
+        tail_note.next_to(cos_row, DOWN, buff=0.26)
+        self.play(
+            FadeIn(cos_row, shift=UP * 0.06),
+            FadeIn(tail_note),
+            run_time=0.40,
+        )
 
-        self.unsay(52.10)
+        self.cue("reveal2")
+        self.unsay(55.40)
         self.hold_until(TOTAL)
 
     def rule_row(self, text: str, color: str) -> VGroup:

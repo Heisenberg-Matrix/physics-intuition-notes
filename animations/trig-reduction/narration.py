@@ -1,9 +1,9 @@
-"""中文配音：用 edge-tts 逐句合成，按字幕时间铺进 54 秒音轨。
+"""中文配音：用 edge-tts 逐句合成，按字幕时间铺进 57 秒音轨。
 
 画面已经由 scene.py 渲染成无声 MP4；这里只负责声音：
 1. 读取 scene.py 的 CUES（字幕文本 + 名义起始时间）；
 2. 每句单独合成，缓存到 media/voice/；
-3. 用实测的字幕淡入时刻把语音依次排好（不重叠，允许最多晚 0.4 秒）；
+3. 用实测的字幕淡入时刻把语音依次排好（不重叠，允许最多晚 0.45 秒）；
 4. 输出 48 kHz 单声道 WAV，交给 run.sh 与视频合成为 AAC。
 
 edge-tts 需要联网。改文案只需改 scene.py 的 CUES，然后重跑本脚本。
@@ -40,22 +40,26 @@ MAX_LAG = 0.45       # 语音最多比字幕晚多少秒
 # 画面是确定性渲染，重跑 scene.py 后这些值保持不变。
 ONSETS = {
     "hook1": 0.40,
-    "hook2": 3.97,
-    "circle": 6.40,
-    "circle_coords": 9.37,
-    "half_q": 14.47,
-    "half_a": 18.97,
-    "neg_q": 26.63,
-    "neg_a": 30.27,
-    "combine1": 36.53,
-    "combine2": 41.83,
-    "reveal": 47.53,
+    "hook2": 4.07,
+    "sin1": 6.57,
+    "sin2": 9.40,
+    "cos1": 13.57,
+    "half_q": 17.57,
+    "half_sin": 22.87,
+    "half_cos": 25.93,
+    "neg_q": 29.93,
+    "neg_sin": 34.67,
+    "neg_cos": 37.63,
+    "combine1": 40.53,
+    "reveal1": 49.37,
+    "reveal2": 53.37,
 }
 
-# 中文课堂读法：cos → 扣赛因，sin → 赛因。
+# 文案里若出现英文函数名，读成自然的中文“余弦/正弦”；
+# 现在的 CUES 已经直接用中文，这段替换只作兜底。
 PRONOUNCE = [
-    (re.compile(r"(?<![A-Za-z])cos(?![A-Za-z])"), "扣赛因"),
-    (re.compile(r"(?<![A-Za-z])sin(?![A-Za-z])"), "赛因"),
+    (re.compile(r"(?<![A-Za-z])cos(?![A-Za-z])"), "余弦"),
+    (re.compile(r"(?<![A-Za-z])sin(?![A-Za-z])"), "正弦"),
 ]
 
 
