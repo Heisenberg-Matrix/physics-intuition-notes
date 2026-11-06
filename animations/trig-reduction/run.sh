@@ -42,6 +42,6 @@ else
   mux media/videos/scene/1920p30/TrigReductionScene.mp4 trig-reduction.mp4
   echo "[video] trig-reduction.mp4"
 
-  "$FF" -y -v error -ss 56 -i trig-reduction.mp4 -frames:v 1 -q:v 3 poster.jpg
+  "$FF" -y -v error -ss 33.4 -i trig-reduction.mp4 -frames:v 1 -q:v 3 poster.jpg
   echo "[poster] poster.jpg"
 fi

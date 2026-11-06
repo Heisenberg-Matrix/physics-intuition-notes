@@ -1,4 +1,4 @@
-"""中文配音：用 edge-tts 逐句合成，按字幕时间铺进 57 秒音轨。
+"""中文配音：用 edge-tts 逐句合成，按字幕时间铺进 69 秒音轨。
 
 画面已经由 scene.py 渲染成无声 MP4；这里只负责声音：
 1. 读取 scene.py 的 CUES（字幕文本 + 名义起始时间）；
@@ -43,21 +43,26 @@ ONSETS = {
     "hook2": 4.07,
     "sin1": 6.57,
     "sin2": 9.40,
-    "cos1": 13.57,
-    "half_q": 17.57,
-    "half_sin": 22.87,
-    "half_cos": 25.93,
-    "neg_q": 29.93,
-    "neg_sin": 34.67,
-    "neg_cos": 37.63,
-    "combine1": 40.53,
-    "reveal1": 49.37,
-    "reveal2": 53.37,
+    "half_q": 12.57,
+    "half_sin": 16.27,
+    "neg_q": 20.33,
+    "neg_sin": 24.03,
+    "mirror_q": 27.73,
+    "sin_mirror": 31.13,
+    "cos_intro": 34.53,
+    "cos_half": 38.03,
+    "cos_neg": 44.13,
+    "cos_mirror": 49.97,
+    "combine1": 55.07,
+    "reveal1": 62.20,
+    "reveal2": 66.10,
 }
 
 # 文案里若出现英文函数名，读成自然的中文“余弦/正弦”；
 # 现在的 CUES 已经直接用中文，这段替换只作兜底。
 PRONOUNCE = [
+    (re.compile(r"π"), "派"),
+    (re.compile(r"α"), "阿尔法"),
     (re.compile(r"(?<![A-Za-z])cos(?![A-Za-z])"), "余弦"),
     (re.compile(r"(?<![A-Za-z])sin(?![A-Za-z])"), "正弦"),
 ]
