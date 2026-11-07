@@ -42,6 +42,6 @@ else
   mux media/videos/scene/1920p30/RadianScene.mp4 radian-2pi.mp4
   echo "[video] radian-2pi.mp4"
 
-  "$FF" -y -v error -ss 112.0 -i radian-2pi.mp4 -frames:v 1 -q:v 3 poster.jpg
+  "$FF" -y -v error -ss 138.5 -i radian-2pi.mp4 -frames:v 1 -q:v 3 poster.jpg
   echo "[poster] poster.jpg"
 fi

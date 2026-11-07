@@ -99,15 +99,15 @@ RADIUS = 1.95                          # 圆半径
 SUB_Y = -6.55                          # 字幕基线
 TAU = 2 * np.pi
 
-# 每段的目标起止时间（秒）；hold_until 把画面锁在这些节拍上。
+# 每段的目标起止时间（秒）；各段的终点就是下一段第一句字幕的名义时刻。
 SEGMENTS = {
-    "intro": (0.0, 17.4),
-    "need": (17.4, 34.9),
-    "formula": (34.9, 57.6),
-    "choose": (57.6, 64.9),
-    "ruler": (64.9, 97.1),
-    "why": (97.1, 107.3),
-    "close": (107.3, 115.0),
+    "intro": (0.0, 29.0),
+    "need": (29.0, 45.2),
+    "formula": (45.2, 77.6),
+    "choose": (77.6, 102.6),
+    "ruler": (102.6, 140.6),
+    "why": (140.6, 163.2),
+    "close": (163.2, 175.0),
 }
 TOTAL = SEGMENTS["close"][1]
 
@@ -118,63 +118,75 @@ NARRATION = {
     "hook1": "一圈，为什么是三百六十度？",
     "hook2": "谁规定，一圈必须是三百六？",
     "four": "如果我说，一圈就是四份呢？",
-    "one": "干脆一点，把一圈记作一。",
-    "record": "这么记，转了多少，一点不耽误。",
+    "label": "所以，转一圈用数字几来表示，其实是人为规定的。",
+    "record": "比如转了零点四圈，照样能准确表示。",
+    "any": "这样一来，任意角度，我们都能用转过的圈数来表示。",
     "need": "可如果我问：这段弧有多长？",
     "unroll": "先别急着算，把圆周拉直看看。",
     "circum": "整圈的长度，是派乘直径。",
     "pi": "派是周长比直径，不是角度。",
     "formula": "回到弧长：周长乘转过的圈数。",
-    "define": "把一圈分成 N 份，转过西塔份。",
-    "example": "比如 N 等于四，转一份西塔是一。",
+    "define": "假如我们规定，一整圈对应 N，实际转过的角度是西塔。",
+    "turns": "那转过的圈数，就是西塔除以 N。",
+    "example": "比如规定一整圈是四，那四分之一圈，就是一。",
     "assemble": "于是 s 等于二派 r，乘西塔比 N。",
-    "coef": "整理一下，系数是二派比 N。",
-    "choose": "N 随我们定，干脆等于二派。",
-    "rform": "系数变成一，只剩 s 等于 r 乘西塔。",
+    "coef": "麻烦的是，算弧长的时候，还要乘上这个换算系数。",
+    "ask": "等等，既然一圈对应多少，是我们自己规定的……那干脆，让这个系数等于一？",
+    "solve": "只要规定，一圈就是二派！",
+    "rform": "换算系数没了。弧长，直接等于半径乘角度！",
+    "unit": "注意，这时的西塔，已经换成了新的角度单位。",
     "ruler": "半径就是一把软尺，贴着圆弧量。",
     "onerad": "弧长正好等于 r，这就是一弧度。",
     "twothree": "两倍 r 是两弧度，三倍是三弧度。",
     "chord": "注意，量的是弧段，不是直弦。",
     "live": "角度连续转，弧长就连续变。",
     "ratio": "西塔是 s 比 r，本身不是长度。",
-    "split": "同一个西塔，既记旋转，又算弧长。",
+    "split": "最妙的是，同一个数字，既能记录转了多少，又能直接告诉我们弧长是半径的多少倍。",
     "birds": "一个数字，两种用途，一石二鸟。",
-    "why": "为什么是二派？整圈弧长二派 r。",
+    "why": "整圈弧长是二派 r，代进西塔等于 s 比 r。",
+    "derive": "西塔就等于二派 r 除以 r，也就是二派。",
     "half": "半圈是派，四分之一是二分之派。",
-    "close": "角度没变长，只是换了个记法。",
+    "origin": "派本来是周长比直径。我们选了弧长比半径，它才进入角度。",
+    "close": "我们没有改变角度，只是换了一种更方便的表示方式。",
     "name": "这就是弧度制。",
 }
 
 # 字幕与起始时间；字幕统一缩到安全宽度 7.2。
 CUES: dict[str, tuple[float, str]] = {
-    "hook1": (0.40, "一圈，为什么是 360°？"),
-    "hook2": (3.70, "谁规定，一圈必须是 360°？"),
-    "four": (7.00, "如果我说，一圈就是 4 份呢？"),
-    "one": (10.40, "干脆一点，把一圈记作 1。"),
-    "record": (13.80, "这么记，转了多少，一点不耽误。"),
-    "need": (17.40, "可如果我问：这段弧有多长？"),
-    "unroll": (21.60, "先别急着算，把圆周拉直看看。"),
-    "circum": (26.40, "整圈的长度，是 π 乘直径。"),
-    "pi": (30.40, "π 是周长比直径，不是角度。"),
-    "formula": (34.90, "回到弧长：周长乘转过的圈数。"),
-    "define": (40.00, "把一圈分成 N 份，转过 θ 份。"),
-    "example": (44.60, "比如 N 等于 4，转一份 θ 是 1。"),
-    "assemble": (49.60, "于是 s = 2πr × θ/N。"),
-    "coef": (53.90, "整理一下，系数是 2π/N。"),
-    "choose": (57.60, "N 随我们定，干脆等于 2π。"),
-    "rform": (60.80, "系数变成 1，只剩 s = rθ。"),
-    "ruler": (64.90, "半径就是一把软尺，贴着圆弧量。"),
-    "onerad": (68.90, "弧长正好等于 r，这就是 1 弧度。"),
-    "twothree": (73.10, "两倍 r 是 2 弧度，三倍是 3 弧度。"),
-    "chord": (77.30, "注意，量的是弧段，不是直弦。"),
-    "live": (81.00, "角度连续转，弧长就连续变。"),
-    "ratio": (85.30, "θ 是 s 比 r，本身不是长度。"),
-    "split": (89.30, "同一个 θ，既记旋转，又算弧长。"),
-    "birds": (93.30, "一个数字，两种用途，一石二鸟。"),
-    "why": (97.10, "为什么是 2π？整圈弧长 2πr。"),
-    "half": (102.10, "半圈是 π，四分之一是 π/2。"),
-    "close": (107.30, "角度没变长，只是换了个记法。"),
-    "name": (110.90, "这就是弧度制。"),
+    "hook1": (0.60, "一圈，为什么是 360°？"),
+    "hook2": (4.07, "谁规定，一圈必须是 360°？"),
+    "four": (7.60, "如果我说，一圈就是 4 份呢？"),
+    "label": (11.40, "所以，一圈用数字几表示，是我们自己定的。"),
+    "record": (17.20, "比如转了 0.4 圈，照样能准确表示。"),
+    "any": (22.00, "任意角度，都可以用圈数来表示。"),
+    "need": (29.00, "可如果我问：这段弧有多长？"),
+    "unroll": (33.60, "先别急着算，把圆周拉直看看。"),
+    "circum": (37.80, "整圈的长度，是 π 乘直径。"),
+    "pi": (41.20, "π 是周长比直径，不是角度。"),
+    "formula": (45.20, "回到弧长：周长乘转过的圈数。"),
+    "define": (49.60, "规定一整圈对应 N，实际角度是 θ。"),
+    "turns": (56.20, "转过的圈数，就是 θ / N。"),
+    "example": (60.60, "比如 N 等于 4，转一份 θ 是 1。"),
+    "assemble": (66.40, "于是 s = 2πr × θ/N。"),
+    "coef": (71.20, "麻烦就麻烦在，这里总有一个换算系数。"),
+    "ask": (77.60, "能不能让这个系数，直接变成 1？"),
+    "solve": (87.60, "只要规定一圈等于 2π！"),
+    "rform": (91.20, "换算系数没了，弧长 = r × θ。"),
+    "unit": (97.00, "一圈 = 2π 弧度，这是新的角度标尺。"),
+    "ruler": (102.60, "半径就是一把软尺，贴着圆弧量。"),
+    "onerad": (106.40, "弧长正好等于 r，这就是 1 弧度。"),
+    "twothree": (110.60, "两倍 r 是 2 弧度，三倍是 3 弧度。"),
+    "chord": (115.20, "注意，量的是弧段，不是直弦。"),
+    "live": (119.00, "角度连续转，弧长就连续变。"),
+    "ratio": (122.80, "θ 是 s 比 r，本身不是长度。"),
+    "split": (127.00, "同一个数字，既能表示旋转，又能直接计算弧长。"),
+    "birds": (136.60, "一个数字，两种用途，一石二鸟。"),
+    "why": (140.60, "整圈弧长 2πr，除以 r 就是 θ。"),
+    "derive": (146.20, "θ = 2πr / r = 2π。"),
+    "half": (151.80, "半圈是 π，四分之一是 π/2。"),
+    "origin": (155.60, "π 本来是周长与直径之比。"),
+    "close": (163.20, "角度没有变，只是换了一把尺子。"),
+    "name": (170.00, "这就是弧度制。"),
 }
 
 
@@ -319,6 +331,10 @@ class RadianScene(Scene):
         elif now > target + 0.05:
             print(f"[timing] overrun: {now:.2f}s > {target:.2f}s")
 
+    def until(self, key: str) -> None:
+        """停到下一句字幕的名义时刻；节拍只从 CUES 取，避免两处时间走散。"""
+        self.hold_until(CUES[key][0])
+
     def cue(self, key: str) -> None:
         at, text = CUES[key]
         self.hold_until(at)
@@ -331,7 +347,7 @@ class RadianScene(Scene):
 
     # ============================================================== 第一段
     def phase_intro(self) -> None:
-        """一圈 = 360° 只是习惯；4、1 都一样能记录旋转。"""
+        """一圈的数值是人为规定的；圈数能记录任意角，包括非整份的角。"""
         top = Arc(radius=RADIUS, start_angle=0, angle=PI,
                   arc_center=CENTER, color=INK, stroke_width=2.4)
         bot = Arc(radius=RADIUS, start_angle=PI, angle=PI,
@@ -365,9 +381,9 @@ class RadianScene(Scene):
         q = cn("谁规定的？", 24, ROSE).move_to([0, 5.05, 0])
         self.play(Create(box), FadeIn(q, shift=DOWN * 0.08), run_time=0.7)
         self.play(num[0].animate.set_color(ROSE), run_time=0.35)
-        self.hold_until(7.0)
+        self.until("four")
 
-        # 改成 4 份
+        # 先试 4 份
         self.cue("four")
         four = VGroup(cn("4", 58, TEAL), cn("份", 21, DIM)
                       ).arrange(DOWN, buff=0.18).move_to(CENTER)
@@ -379,15 +395,35 @@ class RadianScene(Scene):
         self.play(FadeOut(box), FadeOut(q), FadeOut(num),
                   FadeIn(four, scale=0.92), run_time=0.65)
         self.play(Create(ticks), run_time=0.7)
-        self.hold_until(10.4)
+        self.until("label")
 
-        # 改成 1 份
-        self.cue("one")
-        one = VGroup(cn("1", 58, TEAL), cn("圈", 21, DIM)
-                     ).arrange(DOWN, buff=0.18).move_to(CENTER)
-        self.play(FadeOut(four), FadeIn(one, scale=0.92), run_time=0.55)
-        self.play(FadeOut(ticks[1:]), run_time=0.55)
-        self.hold_until(13.8)
+        # S1-4A：同一圈，记成几都行——360、1、100、10，最后还是 1。
+        # 只有中央的数字在换，圆的几何一点没动。
+        self.cue("label")
+
+        def shown(number: str, caption: str, color: str) -> VGroup:
+            return VGroup(
+                cn(number, 58, color), cn(caption, 21, DIM)
+            ).arrange(DOWN, buff=0.24).move_to(CENTER)
+
+        seq = [
+            ("360°", "一整圈", ROSE),
+            ("1", "圈", TEAL),
+            ("100", "份", TEAL),
+            ("10", "份", TEAL),
+            ("1", "圈", TEAL),
+        ]
+        label = shown(*seq[0])
+        self.play(FadeOut(ticks), FadeOut(four),
+                  FadeIn(label, scale=0.95), run_time=0.45)
+        for number, caption, color in seq[1:]:
+            nxt = shown(number, caption, color)
+            # 先收掉再亮出：两个数字叠在一起淡入淡出会糊成一团
+            self.play(FadeOut(label), run_time=0.16)
+            self.play(FadeIn(nxt, scale=0.96), run_time=0.22)
+            self.wait(0.10)
+            label = nxt
+        self.until("record")
 
         # 一圈记作 1，也能说清转了多少
         self.cue("record")
@@ -411,15 +447,41 @@ class RadianScene(Scene):
         group.add_updater(
             lambda g: g.arrange(RIGHT, buff=0.14).move_to([0, -0.95, 0])
         )
-        self.play(FadeOut(one), FadeOut(ticks), FadeOut(self.turn_arrow),
+        self.play(FadeOut(label), FadeOut(self.turn_arrow),
                   FadeIn(sector), FadeIn(radius), FadeIn(group),
                   run_time=0.6)
         self.play(self.theta.animate.set_value(0.40 * TAU),
                   run_time=1.8, rate_func=smooth)
-        self.hold_until(17.4)
+        self.until("any")
+
+        # S1-6：四分之一圈 = 0.25，再转到任意的 0.37 圈；
+        # 角度数值 = 圈数 × 整圈数值，整圈记作 1 时两者相等。
+        self.cue("any")
+        self.play(self.theta.animate.set_value(PI / 2),
+                  run_time=1.0, rate_func=smooth)
+        quarter_eq = cn("1/4 圈 = 0.25", 22, TEAL).move_to([0, -1.85, 0])
+        self.play(FadeIn(quarter_eq, shift=UP * 0.06), run_time=0.45)
+        self.play(self.theta.animate.set_value(0.37 * TAU),
+                  run_time=1.0, rate_func=smooth)
+        any_eq = cn("也可以不是整份：0.37 圈", 22, TEAL).move_to(
+            [0, -1.85, 0]
+        )
+        self.play(FadeOut(quarter_eq), run_time=0.18)
+        self.play(FadeIn(any_eq, shift=UP * 0.05), run_time=0.25)
+        rel = cn("角度数值 = 转过的圈数 × 整圈数值", 23, INK,
+                 t2c={"角度数值": TEAL, "转过的圈数": TEAL, "整圈数值": ROSE})
+        fit_width(rel, 7.2).move_to([0, -2.65, 0])
+        self.play(FadeIn(rel, shift=UP * 0.06), run_time=0.55)
+        since_one = cn("整圈记作 1 ⇒ 角度数值 = 圈数", 22, DIM,
+                       t2c={"1": ROSE, "角度数值": TEAL, "圈数": TEAL})
+        fit_width(since_one, 7.2).move_to([0, -3.30, 0])
+        self.play(FadeIn(since_one), run_time=0.5)
+        self.until("need")
 
         # 留给下一段清理
-        self.intro_leftovers = VGroup(sector, radius, group)
+        self.intro_leftovers = VGroup(
+            sector, radius, group, any_eq, rel, since_one,
+        )
 
     # ============================================================== 第二段
     def phase_need(self) -> None:
@@ -434,7 +496,9 @@ class RadianScene(Scene):
         )
         self.play(Create(highlight), run_time=0.8)
         self.play(FadeIn(qmark, scale=0.8), run_time=0.45)
-        self.hold_until(21.6)
+        # 问句说完后让画面停一下：旋转的记录已经完成，
+        # 接下来要换一条思路——量长度。这个停顿就是转折点。
+        self.until("unroll")
 
         # 圆周拉直：上下两个半圆各自变成一条直线
         self.cue("unroll")
@@ -457,7 +521,7 @@ class RadianScene(Scene):
         lab_bot = m(f"π{it('r')}", 28, ORANGE).next_to(line_bot, RIGHT, buff=0.22)
         note = cn("把圆周拉直", 22, DIM).move_to([0, 6.35, 0])
         self.play(FadeIn(lab_top), FadeIn(lab_bot), FadeIn(note), run_time=0.5)
-        self.hold_until(26.4)
+        self.until("circum")
 
         # 整圈 = 2πr，并且 π 是比值
         self.cue("circum")
@@ -471,7 +535,7 @@ class RadianScene(Scene):
         ).move_to([0, -2.15, 0])
         self.play(FadeIn(c_eq, shift=UP * 0.10), run_time=0.6)
         self.play(FadeIn(sum_eq), run_time=0.5)
-        self.hold_until(30.4)
+        self.until("pi")
 
         self.cue("pi")
         pi_eq = m(
@@ -484,7 +548,7 @@ class RadianScene(Scene):
         )
         self.play(FadeIn(pi_eq, shift=UP * 0.08), run_time=0.65)
         self.play(FadeIn(d_eq), FadeIn(pi_note), run_time=0.65)
-        self.hold_until(34.9)
+        self.until("formula")
 
         self.need_group = VGroup(
             line_top, line_bot, lab_top, lab_bot, note,
@@ -520,8 +584,8 @@ class RadianScene(Scene):
         fit_width(rel, 7.2).move_to([0, -2.25, 0])
         self.play(FadeIn(rel, shift=UP * 0.08), run_time=0.6)
 
-        # 中央角标记与动径
-        self.theta.set_value(2.51)
+        # 中央角标记与动径；角度接住上一段量弧长时的高亮位置
+        self.theta.set_value(0.37 * TAU)
         radius0 = DashedLine(CENTER, point_at(0.0), color=AXIS,
                              stroke_width=1.5, dash_length=0.10)
         radius_now = always_redraw(lambda: Line(
@@ -539,22 +603,26 @@ class RadianScene(Scene):
         ))
         self.play(FadeIn(radius0), FadeIn(radius_now),
                   FadeIn(angle_arc), FadeIn(theta_lab), run_time=0.6)
-        self.hold_until(40.0)
+        self.until("define")
 
-        # 定义 N 与 θ
+        # 定义：整圈对应的数值是 N，当前的数值是 θ
         self.cue("define")
-        n_line = cn("N：一圈分成多少份", 24, INK, t2c={"N": ROSE})
-        t_line = cn("θ：一共转过了多少份", 24, INK, t2c={"θ": TEAL})
-        n_line.move_to([0, -3.20, 0])
-        t_line.move_to([0, -3.85, 0])
-        turns = cn("圈数 = θ / N", 27, INK, t2c={"θ": TEAL, "N": ROSE})
-        turns.move_to([0, -4.55, 0])
+        n_line = cn("整圈 = N", 26, INK, t2c={"N": ROSE})
+        t_line = cn("当前角度 = θ", 26, INK, t2c={"θ": TEAL})
+        n_line.move_to([0, -3.15, 0])
+        t_line.move_to([0, -3.80, 0])
         self.play(FadeIn(n_line, shift=UP * 0.06),
-                  FadeIn(t_line, shift=UP * 0.06), run_time=0.65)
-        self.play(FadeIn(turns), run_time=0.55)
-        self.hold_until(44.6)
+                  FadeIn(t_line, shift=UP * 0.06), run_time=0.6)
+        self.until("turns")
 
-        # N = 4 的具体例子
+        # 圈数 = θ / N
+        self.cue("turns")
+        turns = cn("圈数 = θ / N", 28, INK, t2c={"θ": TEAL, "N": ROSE})
+        turns.move_to([0, -4.55, 0])
+        self.play(FadeIn(turns, shift=UP * 0.06), run_time=0.55)
+        self.until("example")
+
+        # N = 4 的具体例子：整圈 4，四分之一圈是 1
         self.cue("example")
         ticks4 = VGroup(*[
             Line(point_at(a, RADIUS - 0.03), point_at(a, RADIUS + 0.30),
@@ -570,21 +638,27 @@ class RadianScene(Scene):
         quarter = cn("四分之一圈", 22, TEAL).move_to(
             point_at(PI / 4, RADIUS + 0.55)
         )
-        ex = cn("N = 4 时，圈数 = θ / N = 1 / 4", 23, INK,
-                t2c={"θ": TEAL, "N": ROSE})
-        ex.move_to([0, -5.20, 0])
         # 动径上的 θ 与“θ = 1”在同一角度、只差 0.23 个半径，必须收掉一个，
         # 否则两个 θ 叠在一起，等号上会多出一道横线。
         self.play(FadeIn(theta_one), FadeIn(quarter), FadeOut(theta_lab),
                   run_time=0.55)
-        self.play(FadeIn(ex), run_time=0.5)
-        self.hold_until(49.6)
+        n4 = cn("整圈 = N = 4", 24, INK, t2c={"N": ROSE, "4": ROSE})
+        t1 = cn("当前角度 = θ = 1", 24, INK, t2c={"θ": TEAL, "1": TEAL})
+        turns4 = cn("圈数 = θ / N = 1 / 4", 24, INK,
+                    t2c={"θ": TEAL, "N": ROSE})
+        n4.move_to([0, -3.15, 0])
+        t1.move_to([0, -3.80, 0])
+        turns4.move_to([0, -4.55, 0])
+        self.play(FadeOut(n_line), FadeOut(t_line), FadeOut(turns),
+                  run_time=0.25)
+        self.play(FadeIn(n4), FadeIn(t1), FadeIn(turns4), run_time=0.35)
+        self.until("assemble")
 
         # 代入：s = 2πr · θ/N
         self.cue("assemble")
         self.play(
-            FadeOut(rel), FadeOut(n_line), FadeOut(t_line),
-            FadeOut(turns), FadeOut(ex),
+            FadeOut(rel), FadeOut(n4), FadeOut(t1),
+            FadeOut(turns4),
             FadeOut(theta_one), FadeOut(quarter), FadeOut(ticks4),
             run_time=0.6,
         )
@@ -594,24 +668,24 @@ class RadianScene(Scene):
             44,
         ).move_to([0, -3.30, 0])
         self.play(FadeIn(s_theta, shift=UP * 0.10), run_time=0.7)
-        self.hold_until(53.9)
+        self.until("coef")
 
-        # 整理出系数 2π/N
+        # 整理出系数 2π/N；拆成四块，后面才能单独把系数拿走
         self.cue("coef")
         prefix = m(f'{span(it("s"), ORANGE)} = ', 44)
         coef = m(f'({span("2π", ROSE)}/{span("N", ROSE)})', 44)
-        suffix = m(
-            f' · {span(it("r"), BLUE)} · {span(it("θ"), TEAL)}',
-            44,
+        dot = m("·", 44)
+        rest = m(f'{span(it("r"), BLUE)} · {span(it("θ"), TEAL)}', 44)
+        coef_formula = VGroup(prefix, coef, dot, rest).arrange(
+            RIGHT, buff=0.10
         )
-        coef_formula = VGroup(prefix, coef, suffix).arrange(RIGHT, buff=0.05)
         coef_formula.move_to([0, -3.30, 0])
         coef_box = SurroundingRectangle(coef, color=ROSE, buff=0.10,
                                         stroke_width=2.4)
-        coef_note = cn("转换系数", 20, ROSE).next_to(coef_box, DOWN, buff=0.18)
+        coef_note = cn("换算系数", 20, ROSE).next_to(coef_box, DOWN, buff=0.18)
         self.play(ReplacementTransform(s_theta, coef_formula), run_time=0.7)
         self.play(Create(coef_box), FadeIn(coef_note), run_time=0.5)
-        self.hold_until(57.6)
+        self.until("ask")
 
         self.formula_left = VGroup(c_eq, radius0, radius_now, angle_arc,
                                    theta_lab, coef_formula, coef_box,
@@ -619,40 +693,74 @@ class RadianScene(Scene):
 
     # ============================================================== 第四段
     def phase_choose(self) -> None:
-        """令 2π/N = 1，N = 2π，系数消失，s = rθ。"""
-        self.cue("choose")
-        eq1 = m(f'2π / N = 1', 30, ROSE).move_to([0, -5.00, 0])
-        eq2 = m(f'N = 2π', 32, ROSE).move_to([0, -5.60, 0])
-        self.play(FadeIn(eq1, shift=UP * 0.06), run_time=0.55)
-        self.play(FadeIn(eq2, shift=UP * 0.06), run_time=0.55)
-        self.hold_until(60.8)
-
-        self.cue("rform")
+        """先盯住系数，再规定 N = 2π，让系数变成 1。"""
+        self.cue("ask")
         coef_formula = self.formula_left[5]
         coef_box = self.formula_left[6]
         coef_note = self.formula_left[7]
-        step = m(
-            f'{span(it("s"), ORANGE)} = 1 · {span(it("r"), BLUE)} · '
-            f'{span(it("θ"), TEAL)}',
-            44,
-        ).move_to([0, -3.30, 0])
+        prefix, coef, dot, rest = coef_formula
+
+        # 只把系数框出来，先不给 N = 2π 的答案
+        self.play(Indicate(coef_box, color=ROSE, scale_factor=1.06),
+                  run_time=1.0)
+        q = cn("这个系数，能不能等于 1？", 23, ROSE).move_to(
+            [0, -4.95, 0]
+        )
+        self.play(FadeIn(q, shift=UP * 0.06), run_time=0.5)
+        # 问句说完后留一段停顿，让“能不能”先落下来
+        for _ in range(3):
+            self.play(coef_box.animate.set_stroke(width=3.6), run_time=0.7)
+            self.play(coef_box.animate.set_stroke(width=2.4), run_time=0.7)
+        self.until("solve")
+
+        # 让系数等于 1：2π/N = 1 ⇒ N = 2π
+        self.cue("solve")
+        eq1 = m(f'2π / {it("N")} = 1', 30, ROSE).move_to([0, -4.95, 0])
+        eq2 = m(f'{it("N")} = 2π', 32, ROSE).move_to([0, -5.55, 0])
+        self.play(FadeOut(q), FadeIn(eq1, shift=UP * 0.06), run_time=0.55)
+        self.play(FadeIn(eq2, shift=UP * 0.06), run_time=0.5)
+        self.play(Indicate(eq1, color=ROSE, scale_factor=1.05), run_time=0.6)
+        self.until("rform")
+
+        # 系数 2π/N 变成 1；1 不必写出来，连同乘号一起消失
+        self.cue("rform")
         self.play(FadeOut(coef_box), FadeOut(coef_note),
                   FadeOut(eq1), run_time=0.35)
-        self.play(ReplacementTransform(coef_formula, step), run_time=0.6)
+        one = m("1", 44).move_to(coef)
+        self.play(ReplacementTransform(coef, one), run_time=0.5)
+        # 去掉系数和第一个乘号后，s = 与 r · θ 重新居中
+        tmp = VGroup(prefix.copy(), rest.copy()).arrange(
+            RIGHT, buff=0.05
+        ).move_to([0, -3.30, 0])
+        p_target = tmp[0].get_center()
+        r_target = tmp[1].get_center()
+        self.play(
+            FadeOut(one, scale=1.15), FadeOut(dot),
+            prefix.animate.move_to(p_target),
+            rest.animate.move_to(r_target),
+            run_time=0.6,
+        )
         final = m(
             f'{span(it("s"), ORANGE)} = {span(it("r"), BLUE)}'
             f'{span(it("θ"), TEAL)}',
             56,
         ).move_to([0, -3.30, 0])
-        self.play(ReplacementTransform(step, final), run_time=0.6)
-        one_turn = cn("一圈 = 2π 弧度", 26, ROSE).move_to(
-            [0, -5.05, 0]
-        )
-        self.play(FadeOut(eq2), FadeIn(one_turn), run_time=0.45)
-        self.hold_until(64.9)
+        self.play(ReplacementTransform(VGroup(prefix, rest), final),
+                  run_time=0.6)
+        self.until("unit")
+
+        # 说明：θ 从现在起按新的角度标尺读数
+        self.cue("unit")
+        self.play(FadeOut(eq2), run_time=0.3)
+        one_turn = cn("一圈 = 2π 弧度", 26, ROSE).move_to([0, -4.85, 0])
+        unit_note = cn("θ 改用新标尺：整圈 = 2π", 21, DIM,
+                       t2c={"θ": TEAL, "2π": ROSE}).move_to([0, -5.50, 0])
+        self.play(FadeIn(one_turn, shift=UP * 0.06), run_time=0.5)
+        self.play(FadeIn(unit_note), run_time=0.45)
+        self.until("ruler")
 
         self.s_eq = final
-        self.one_turn = one_turn
+        self.unit_group = VGroup(one_turn, unit_note)
 
     # ============================================================== 第五段
     def phase_ruler(self) -> None:
@@ -661,7 +769,7 @@ class RadianScene(Scene):
         leftovers = self.formula_left[:5]
         self.play(
             FadeOut(leftovers),
-            FadeOut(self.one_turn),
+            FadeOut(self.unit_group),
             self.s_eq.animate.scale(0.62).move_to([0, -1.25, 0]),
             run_time=0.6,
         )
@@ -680,7 +788,7 @@ class RadianScene(Scene):
         self.play(ReplacementTransform(ruler, arc1), run_time=1.2)
         bend_note = cn("把 r 弯上去", 21, ORANGE).move_to([0, -2.05, 0])
         self.play(FadeIn(bend_note), run_time=0.3)
-        self.hold_until(68.9)
+        self.until("onerad")
 
         # 弧长 = r ⇒ 一弧度
         self.cue("onerad")
@@ -690,7 +798,7 @@ class RadianScene(Scene):
         rad_note = cn("θ = 1 弧度", 26, TEAL).move_to([0, -2.75, 0])
         self.play(FadeOut(bend_note), FadeIn(arc_lab), Create(leader),
                   FadeIn(rad_note), run_time=0.6)
-        self.hold_until(73.1)
+        self.until("twothree")
 
         # 2r、3r
         self.cue("twothree")
@@ -710,7 +818,7 @@ class RadianScene(Scene):
                   FadeOut(arc_lab), FadeOut(leader), FadeOut(rad_note),
                   run_time=1.4)
         self.play(Create(ticks), FadeIn(marks), run_time=0.6)
-        self.hold_until(77.3)
+        self.until("chord")
 
         # 弧段不是弦
         self.cue("chord")
@@ -724,7 +832,7 @@ class RadianScene(Scene):
         )
         self.play(Create(chord), FadeIn(chord_lab), run_time=0.6)
         self.play(FadeIn(chord_note), run_time=0.35)
-        self.hold_until(81.0)
+        self.until("live")
 
         # 连续变化
         self.cue("live")
@@ -765,24 +873,31 @@ class RadianScene(Scene):
         self.play(FadeIn(static_ticks), FadeIn(theta_ro), FadeIn(s_ro),
                   run_time=0.5)
         self.play(self.theta.animate.set_value(3.0),
-                  run_time=2.4, rate_func=linear)
-        self.hold_until(85.3)
+                  run_time=2.2, rate_func=linear)
+        self.until("ratio")
 
-        # 分屏：记录旋转 vs 计算弧长
+        # θ 是两个长度之比：没有长度量纲；弧度是角度单位，不是米、厘米
         self.cue("ratio")
-        eq_ratio = VGroup(
-            m(f'{span(it("θ"), TEAL)} = {span(it("s"), ORANGE)} / '
-              f'{span(it("r"), BLUE)}', 40),
-            cn("两个长度之比", 19, DIM),
-        ).arrange(DOWN, buff=0.12).move_to([0, -1.50, 0])
-        self.play(self.s_eq.animate.set_opacity(0.0),
-                  FadeIn(eq_ratio, shift=UP * 0.05), run_time=0.5)
-        self.hold_until(89.3)
+        self.play(FadeOut(theta_ro), FadeOut(s_ro), run_time=0.35)
+        eq_ratio = m(
+            f'{span(it("θ"), TEAL)} = {span(it("s"), ORANGE)} / '
+            f'{span(it("r"), BLUE)}', 40,
+        ).move_to([0, -1.70, 0])
+        note_ratio = cn("两个长度之比，没有长度单位", 21, DIM).move_to(
+            [0, -2.60, 0]
+        )
+        note_unit = cn("角度是纯数字，单位是弧度", 21, DIM,
+                       t2c={"弧度": ROSE}).move_to([0, -3.25, 0])
+        # 先让顶部的 s = rθ 隐去，再亮出 θ = s / r，避免两行叠在一起
+        self.play(self.s_eq.animate.set_opacity(0.0), run_time=0.3)
+        self.play(FadeIn(eq_ratio, shift=UP * 0.05), run_time=0.5)
+        self.play(FadeIn(note_ratio), FadeIn(note_unit), run_time=0.5)
+        self.until("split")
 
         # 分屏：同一个 θ 的两份工作
         self.cue("split")
-        self.play(FadeOut(eq_ratio), FadeOut(theta_ro), FadeOut(s_ro),
-                  run_time=0.4)
+        self.play(FadeOut(eq_ratio), FadeOut(note_ratio),
+                  FadeOut(note_unit), run_time=0.4)
         self.play(self.theta.animate.set_value(1.20), run_time=0.6)
 
         badge = VGroup(
@@ -803,7 +918,10 @@ class RadianScene(Scene):
         panel_b.move_to([1.78, -3.25, 0])
         title_a = cn("记录旋转", 24, TEAL).next_to(panel_a.get_top(), DOWN, buff=0.20)
         title_b = cn("计算弧长", 24, ORANGE).next_to(panel_b.get_top(), DOWN, buff=0.20)
-        val_a = m(f'{span(it("θ"), TEAL)} = 1.20', 30).move_to(
+        val_a = VGroup(
+            m(f'{span(it("θ"), TEAL)} = 1.20', 30),
+            cn("rad", 21, TEAL),
+        ).arrange(RIGHT, buff=0.12).move_to(
             panel_a.get_center() + DOWN * 0.10
         )
         val_b = VGroup(
@@ -822,7 +940,15 @@ class RadianScene(Scene):
         self.play(Create(conn_a), Create(conn_b), run_time=0.4)
         self.play(FadeIn(val_a), FadeIn(val_b),
                   FadeIn(note_a), FadeIn(note_b), run_time=0.45)
-        self.hold_until(93.3)
+        # 旁白较长：依次把两块面板和同一个 1.20 点出来
+        self.wait(0.5)
+        self.play(Indicate(panel_a, color=TEAL, scale_factor=1.04),
+                  run_time=0.9)
+        self.play(Indicate(panel_b, color=ORANGE, scale_factor=1.04),
+                  run_time=0.9)
+        self.play(Indicate(VGroup(val_a, val_b), color=ROSE,
+                           scale_factor=1.05), run_time=1.0)
+        self.until("birds")
 
         self.cue("birds")
         birds = cn("一石二鸟！", 38, ROSE, weight=BOLD).move_to([0, -5.05, 0])
@@ -832,7 +958,7 @@ class RadianScene(Scene):
             run_time=0.4,
         )
         self.play(FadeIn(birds, scale=0.9), run_time=0.5)
-        self.hold_until(97.1)
+        self.until("why")
 
         self.split_left = VGroup(
             live_arc, live_dot, static_ticks, badge_group,
@@ -873,12 +999,29 @@ class RadianScene(Scene):
         self.play(self.theta.animate.set_value(TAU), run_time=2.4,
                   rate_func=linear)
 
+        # 整圈扫完：s = 2πr，代进 θ = s/r
         exact_s = m(f'{span(it("s"), ORANGE)} = 2π{it("r")}', 32, ORANGE
                     ).move_to([0, -3.05, 0])
-        exact_th = m(f'{span(it("θ"), TEAL)} = 2π', 32, TEAL
-                     ).move_to([0, -3.75, 0])
+        subst = m(
+            f'{span(it("θ"), TEAL)} = 2π{it("r")} / {it("r")}', 32, TEAL
+        ).move_to([0, -3.75, 0])
         self.play(FadeOut(s_ro), FadeOut(th_ro), run_time=0.25)
-        self.play(FadeIn(exact_s), FadeIn(exact_th), run_time=0.5)
+        self.play(FadeIn(exact_s), FadeIn(subst), run_time=0.5)
+        self.until("derive")
+
+        # 把 r 约掉：在原有式子的右边补上“= 2π”，整行重新居中
+        self.cue("derive")
+        tail = m(" = 2π", 32, TEAL)
+        tmp = VGroup(subst.copy(), tail).arrange(
+            RIGHT, buff=0.06
+        ).move_to([0, -3.75, 0])
+        tail.move_to(tmp[1].get_center())
+        target = tmp[0].get_center()
+        self.play(FadeIn(tail, shift=LEFT * 0.05),
+                  subst.animate.move_to(target), run_time=0.6)
+        self.play(Indicate(VGroup(subst, tail), color=TEAL,
+                           scale_factor=1.05), run_time=0.6)
+        self.until("half")
 
         # 半圈与四分之一圈
         self.cue("half")
@@ -901,22 +1044,28 @@ class RadianScene(Scene):
         quarter_eq = cn("四分之一圈：s = πr/2，θ = π/2", 26, ROSE).move_to(
             [0, -3.50, 0]
         )
-        pi_note = cn("π 是两个长度之比，不是角度", 22, ROSE).move_to(
-            [0, -4.30, 0]
-        )
-        self.play(FadeOut(exact_s), FadeOut(exact_th),
+        self.play(FadeOut(exact_s), FadeOut(subst), FadeOut(tail),
                   FadeOut(theta_eq), FadeOut(sweep_arc), run_time=0.4)
         self.play(Create(half_arc), run_time=0.6)
         self.play(Create(quarter_arc), run_time=0.5)
         self.play(FadeIn(pi_lab), FadeIn(half_lab), FadeIn(two_pi_lab),
                   run_time=0.4)
         self.play(FadeIn(half_eq), FadeIn(quarter_eq), run_time=0.5)
-        self.play(FadeIn(pi_note), run_time=0.35)
-        self.hold_until(107.3)
+        self.until("origin")
+
+        # π 原本来自周长与直径；是我们选了弧长比半径，它才进入角度
+        self.cue("origin")
+        origin1 = cn("π 是圆周长 ÷ 直径", 22, ROSE).move_to([0, -4.35, 0])
+        origin2 = cn("我们选了弧长 ÷ 半径，它才进入角度", 21, DIM,
+                     t2c={"弧长": ORANGE, "半径": BLUE, "角度": TEAL}
+                     ).move_to([0, -5.02, 0])
+        self.play(FadeIn(origin1, shift=UP * 0.05), run_time=0.5)
+        self.play(FadeIn(origin2), run_time=0.5)
+        self.until("close")
 
         self.why_left = VGroup(
             half_arc, quarter_arc, pi_lab, half_lab, two_pi_lab,
-            half_eq, quarter_eq, pi_note,
+            half_eq, quarter_eq, origin1, origin2,
         )
 
     # ============================================================== 第七段
