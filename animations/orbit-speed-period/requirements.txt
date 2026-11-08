@@ -1,0 +1,6 @@
+# Python 3.10+（本仓库用 3.10.11 + Manim 0.19.1 验证）
+manim==0.19.1
+numpy>=1.26
+# 中文配音；需要联网访问 Microsoft Edge 语音服务
+edge-tts==7.3.1
+# Manim 写 MP4、run.sh 混音都需要 FFmpeg；Windows 可使用仓库根目录的 .venv/Scripts/ffmpeg.exe。
